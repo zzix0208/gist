@@ -291,6 +291,26 @@ Step 8: Vercel deploy + 自己跑 3 条新闻 verify
 - 跑 LLM 会消耗 Gemini free tier quota, 一条约 $0.005, 
   调试时注意不要无限制重试
 ```
+1. 落脚点空泛, "与我无关"
+   → prompt 问题
+   → 加约束: 链路终点要量化 (涨幅/金额) 或落到
+     "对个人意味着什么"
+   
+2. 术语解释没出现
+   → prompt 第 7 条本来要求了, 模型没执行到位
+   → 加强约束或加 few-shot example
+   
+3. 不确定性版面太大
+   → 双重问题:
+     - prompt: 信息密度可以再压 (限字数)
+     - UI: 视觉权重 Step 7 调 (小字号 / 折叠 / 
+       页面下移)
+     
+4. concept 没解释
+   → 先想清楚要的形态再说:
+     - 段落里 inline 解释 → 改 prompt
+     - 鼠标悬停 tooltip → UI 工作
+     - 底部 chip 点开看 (现在的样子)
 
 ### Phase A 评分历史 (供参考)
 
