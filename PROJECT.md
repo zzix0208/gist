@@ -119,7 +119,7 @@ Sitemap:
 
 ### 技术栈
 
-Next.js 14 (App Router) + TypeScript + Tailwind / @google/generative-ai (Demo Gemini 3.5 Flash) → 后续切 DeepSeek (兼容 OpenAI API) / localStorage (v0 单用户) / Vercel 部署
+Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / @google/generative-ai (Demo Gemini 3.5 Flash) → 后续切 DeepSeek (兼容 OpenAI API, openai SDK) / localStorage (v0 单用户) / Vercel 部署
 
 ### Data schema
 
