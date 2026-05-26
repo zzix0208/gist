@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
 import type { Article } from '@/lib/types';
 
 export default function ArticleView({ article }: { article: Article }) {
@@ -14,8 +15,6 @@ export default function ArticleView({ article }: { article: Article }) {
       </header>
 
       <Section heading="机制 (传导链路)" body={article.sections.mechanism} />
-      <Section heading="历史 (类似 case)" body={article.sections.history} />
-      <Section heading="不确定性" body={article.sections.uncertainty} />
 
       <section>
         <h2 className="text-lg font-semibold mb-2">概念</h2>
@@ -32,15 +31,42 @@ export default function ArticleView({ article }: { article: Article }) {
           ))}
         </div>
       </section>
+
+      <Section
+        heading="历史 (类似 case)"
+        body={article.sections.history}
+        headingClass="text-base font-semibold"
+      />
+
+      <Section
+        heading="不确定性"
+        body={article.sections.uncertainty}
+        headingClass="text-base font-semibold"
+        bodyClass="text-xs leading-6 text-zinc-500"
+      />
     </main>
   );
 }
 
-function Section({ heading, body }: { heading: string; body: string }) {
+function Section({
+  heading,
+  body,
+  headingClass = 'text-lg font-semibold',
+  bodyClass = 'text-sm leading-7',
+}: {
+  heading: string;
+  body: string;
+  headingClass?: string;
+  bodyClass?: string;
+}) {
   return (
     <section>
-      <h2 className="text-lg font-semibold mb-2">{heading}</h2>
-      <p className="whitespace-pre-wrap text-sm leading-7">{body}</p>
+      <h2 className={`${headingClass} mb-2`}>{heading}</h2>
+      <div
+        className={`${bodyClass} [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1`}
+      >
+        <ReactMarkdown>{body}</ReactMarkdown>
+      </div>
     </section>
   );
 }
