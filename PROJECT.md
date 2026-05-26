@@ -247,9 +247,10 @@ DevTools Network tab:
 ### 当前
 
 ```text
-代码实现: Step 1-3 完成
-最新 commit: efb9bc1 (branch: main, 共 4 个 commit)
+代码实现: Step 1-8 完成, v0 已上线
+最新 commit: 4a73393 (branch: main, 共 13 个 commit)
 项目目录: ~/Desktop/finews-agent/
+线上 URL: https://finews-agent.vercel.app/
 开发环境: Claude Code (desktop app)
 ```
 
@@ -268,19 +269,19 @@ Phase B 代码实现:
           真实 Gemini API 调用 verified (gemini-3.5-flash 可用)
           端到端测试通过: HTTP 200, ~14s 一条 article
           markdown parser 修了一次 bug (stripBulletAndBold)
+  Step 4: 首页 + InputForm + 提交流程
+  Step 5: /article/[id] 真渲染 + ArticleView
+  Step 6: /concepts 列表 + 详情 + 顶部 nav
+  Step 7: markdown 渲染 + 视觉重排 + responsive
+  Step 8: Vercel deploy + 3 条新闻 verify
+          线上 URL: https://finews-agent.vercel.app/
 ```
 
-### 下一步 (剩余 Step 4-8)
+### 下一步
 
 ```text
-Step 4: 首页 + InputForm 组件 (粘新闻 → 调 API)
-Step 5: article/[id] 页 + ArticleView 组件 (四段 + concepts link)
-Step 6: /concepts 列表页 + /concepts/[name] 详情页
-        (cross-article 关联通过 appearances[] 自然体现)
-Step 7: 样式打磨 + responsive
-Step 8: Vercel deploy + 自己跑 3 条新闻 verify
-
-预计剩余 2-3 小时.
+v0 完成. 后续待规划 v0.5 (RSSHub 自动拉 + 邮箱 push).
+短期 backlog 见本节 "已知风险/注意" 部分.
 ```
 
 ### 已知风险/注意
