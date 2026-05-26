@@ -290,6 +290,12 @@ Step 8: Vercel deploy + 自己跑 3 条新闻 verify
 - Vercel 部署时需要在 Dashboard 配置 GEMINI_API_KEY 环境变量
 - 跑 LLM 会消耗 Gemini free tier quota, 一条约 $0.005, 
   调试时注意不要无限制重试
+- dev 环境下切走应用 (Chrome 进入后台) 等 LLM 响应,
+  偶现 "LLM call failed". 怀疑是 dev server hot
+  reload / Mac sleep / Chrome tab throttling. 
+  deploy 到 Vercel 后大概率消失 (serverless 不依
+  赖本地状态). 真要修需要复现时抓 dev server log
+  定位.
 ```
 1. 落脚点空泛, "与我无关"
    → prompt 问题
