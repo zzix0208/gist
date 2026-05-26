@@ -124,6 +124,8 @@ Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / @go
 ### Data schema
 
 ```ts
+type Layer = '宏观' | '产业' | '微观' | '技术';
+
 type Article = {
   id: string;              // uuid
   title: string;
@@ -135,15 +137,12 @@ type Article = {
     history: string;
     uncertainty: string;
   };
-  concepts: Array<{
-    name: string;
-    layer: '宏观' | '产业' | '微观' | '技术';
-  }>;
+  concepts: Array<{ name: string; layer: Layer }>;
 };
 
 type Concept = {
   name: string;
-  layer: '宏观' | '产业' | '微观' | '技术';
+  layer: Layer;
   definition: string;      // 第一次抽到时的定义
   first_seen: string;
   appearances: string[];   // article id 列表
@@ -163,39 +162,36 @@ POST /api/generate-article
     mechanism: string, 
     history: string, 
     uncertainty: string, 
-    concepts: Array<{ name: string, layer: string, definition: string }> 
+    concepts: Array<{ name: string, layer: Layer, definition: string }> 
   }
 ```
 
-Provider 抽象在 `lib/llm.ts`, 根据 `process.env.LLM_PROVIDER` 切 Gemini / DeepSeek, 切换只改 1 个文件 + 1 个 env 变量。
+Provider 抽象在 `lib/llm.ts`, 根据 `process.env.LLM_PROVIDER` 切 Gemini / DeepSeek。
+
+Markdown parser 注意点: 已修一次 bug。模型实际输出格式带 markdown bullet + bold 包装 (`* **[名] (层)** - 定义.`), 原 parser 只识别裸格式。当前 parser 含 `stripBulletAndBold()` + 分隔符容错 (`:` / `：` 都接受)。后续遇到新边角情况可能还需修。
 
 ### 目录结构
 
 ```text
 .
 ├── app/
-│   ├── page.tsx                       # /
-│   ├── article/[id]/page.tsx          # /article/:id
-│   ├── concepts/page.tsx              # /concepts
-│   ├── concepts/[name]/page.tsx       # /concepts/:name
-│   ├── api/generate-article/route.ts  # POST endpoint (server only)
+│   ├── page.tsx                       # / (待做, Step 4)
+│   ├── article/[id]/page.tsx          # 待做, Step 5
+│   ├── concepts/page.tsx              # 待做, Step 6
+│   ├── concepts/[name]/page.tsx       # 待做, Step 6
+│   ├── api/generate-article/route.ts  # ✓ Step 3 完成
 │   ├── layout.tsx
 │   └── globals.css
-├── components/
-│   ├── InputForm.tsx
-│   ├── ArticleView.tsx
-│   ├── ConceptList.tsx
-│   └── Nav.tsx
+├── components/                        # 待做 Step 4+
 ├── lib/
-│   ├── prompts.ts                     # v5 prompt
-│   ├── storage.ts                     # localStorage helpers (client only)
-│   ├── llm.ts                         # Provider abstraction (server only)
-│   └── types.ts
-├── .env.local                         # 本地 secret, 不上 git
-├── .env.example                       # 模板, 列 key 名无 value
+│   ├── prompts.ts                     # ✓ v5 prompt
+│   ├── storage.ts                     # ✓ localStorage helpers
+│   ├── llm.ts                         # ✓ Provider 抽象 + parser
+│   └── types.ts                       # ✓ Article/Concept/Layer
+├── .env.local                         # API key, 不上 git
+├── .env.example                       # 模板
 ├── .gitignore
-├── package.json
-└── README.md
+└── package.json
 ```
 
 ---
@@ -212,7 +208,7 @@ API key 是 server-only secret。客户端代码任何情况下都不能看到 k
      (NEXT_PUBLIC_ 会被 webpack 注入到 client bundle, 暴露)
 
 2. LLM SDK 只在 server 端实例化
-   - lib/llm.ts 顶部不要写 'use client'
+   - lib/llm.ts 顶部有 'server-only' import 守卫
    - import { generateArticle } 只能在 api/*/route.ts
    - 不能在 'use client' 组件里直接 import LLM SDK
 
@@ -245,18 +241,63 @@ DevTools Network tab:
 ```
 
 ---
+
 ## 6. 进度
 
-**现在**: prompt 已在 Gemini AI Studio 手工验证 (v5, 见第 3 节), 待写代码.
+### 当前
 
-**下一步**:
-1. init Next.js + TypeScript + Tailwind 项目
-2. 实现 lib/types.ts + storage.ts + prompts.ts (放 v5) + llm.ts
-3. 实现 api/generate-article/route.ts, 跑通 curl 测试
-4. 实现首页 + InputForm 组件
-5. 实现 article/[id] 页 + ArticleView 组件
-6. 实现 concepts 列表页 + 单概念详情页
-7. 样式打磨 + responsive
-8. Vercel deploy + 自己跑 3 条新闻 verify
+```text
+代码实现: Step 1-3 完成
+最新 commit: efb9bc1 (branch: main, 共 4 个 commit)
+项目目录: ~/Desktop/finews-agent/
+开发环境: Claude Code (desktop app)
+```
 
-预计 4-5 小时跑通.
+具体已完成:
+
+```text
+Phase A (prompt 验证, Gemini AI Studio 手工跑):
+  v5 prompt 通过 4.5+/5, 已 freeze 在 lib/prompts.ts
+
+Phase B 代码实现:
+  Step 1: Next.js 16 + TypeScript + Tailwind v4 项目初始化
+          dev server 跑通
+  Step 2: lib/ scaffolding (types/storage/prompts/llm.ts)
+          v5 prompt 已嵌入 lib/prompts.ts
+  Step 3: api/generate-article/route.ts 跑通
+          真实 Gemini API 调用 verified (gemini-3.5-flash 可用)
+          端到端测试通过: HTTP 200, ~14s 一条 article
+          markdown parser 修了一次 bug (stripBulletAndBold)
+```
+
+### 下一步 (剩余 Step 4-8)
+
+```text
+Step 4: 首页 + InputForm 组件 (粘新闻 → 调 API)
+Step 5: article/[id] 页 + ArticleView 组件 (四段 + concepts link)
+Step 6: /concepts 列表页 + /concepts/[name] 详情页
+        (cross-article 关联通过 appearances[] 自然体现)
+Step 7: 样式打磨 + responsive
+Step 8: Vercel deploy + 自己跑 3 条新闻 verify
+
+预计剩余 2-3 小时.
+```
+
+### 已知风险/注意
+
+```text
+- markdown parser 是 v0 实现, 后续遇到新边角情况可能要继续修
+- Vercel 部署时需要在 Dashboard 配置 GEMINI_API_KEY 环境变量
+- 跑 LLM 会消耗 Gemini free tier quota, 一条约 $0.005, 
+  调试时注意不要无限制重试
+```
+
+### Phase A 评分历史 (供参考)
+
+```text
+v1 原版            3.5 - 3.75
+v2 加机制视角约束  4.25
+v3 加概念层级标签  4.25 - 4.50
+v4 删"关联" section 4.50
+v5 换 user 身份 + 加链路具体性 + 加术语解释 4.75 (final)
+```
