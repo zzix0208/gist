@@ -11,7 +11,17 @@ export async function generateArticle(
   const prompt = buildArticlePrompt(title, rawText);
   const provider = process.env.LLM_PROVIDER ?? 'gemini';
   const markdown = provider === 'deepseek' ? await callDeepseek(prompt) : await callGemini(prompt);
-  return parseV5Markdown(markdown);
+  const result = parseV5Markdown(markdown);
+  if (result.concepts.length === 0) {
+    // Dump raw response only when something looks wrong so we have something
+    // to diagnose without flooding normal logs. Safe to keep in prod.
+    console.warn(
+      '[llm] parsed 0 concepts — possible parser miss or LLM omission. raw response:\n>>>>>>>>>>\n' +
+        markdown +
+        '\n<<<<<<<<<<',
+    );
+  }
+  return result;
 }
 
 async function callGemini(prompt: string): Promise<string> {
