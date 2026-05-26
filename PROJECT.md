@@ -296,6 +296,10 @@ Step 8: Vercel deploy + 自己跑 3 条新闻 verify
   deploy 到 Vercel 后大概率消失 (serverless 不依
   赖本地状态). 真要修需要复现时抓 dev server log
   定位.
+- 历史 case 缺少 "那次后来发生了什么" (影响 / 结果):
+  当前 prompt 只要求 "哪里像 / 哪里不像", 缺时间上
+  的延伸. 后续 prompt 优化时加约束: 历史段除了对比,
+  还要说那次后续 6-24 个月的关键发展.
 ```
 1. 落脚点空泛, "与我无关"
    → prompt 问题
