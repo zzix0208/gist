@@ -306,6 +306,13 @@ Step 8: Vercel deploy + 自己跑 3 条新闻 verify
   原因: prompt 没强制固定格式. 后续 prompt 优化时
   统一: 强制用 2 个固定标签 (建议 "**相似点**:" /
   "**不同点**:"), 强制用统一的 markdown bullet 格式.
+- concept definition 含 "本新闻" 表述, 在 concept 详情
+  页 cross-article 视图下 misleading: "本新闻" 实际只指
+  首次抽到时那条, 后续出现的新闻语境丢失. 短期 (prompt
+  优化时): 改 prompt 让 definition 只写通用定义, 不带
+  "本新闻...". 长期 (v1): schema 拆字段, 每条 article
+  记录用到的 concept 的具体角色, concept 详情页展示所
+  有出现新闻各自的角色 list.
 ```
 1. 落脚点空泛, "与我无关"
    → prompt 问题
