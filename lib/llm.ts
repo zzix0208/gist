@@ -69,21 +69,24 @@ function parseV5Markdown(md: string): GenerateArticleResult {
 function parseConceptsBlock(
   text: string,
 ): Array<{ name: string; layer: Layer; definition: string }> {
+  const lines = text
+    .split('\n')
+    .map(stripBulletAndBold)
+    .filter((l) => l.length > 0);
+
   const entries: string[] = [];
   let current: string[] = [];
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (/^[\[【]/.test(trimmed)) {
+  for (const line of lines) {
+    if (/^[\[【]/.test(line)) {
       if (current.length) entries.push(current.join(' '));
-      current = [trimmed];
+      current = [line];
     } else if (current.length) {
-      current.push(trimmed);
+      current.push(line);
     }
   }
   if (current.length) entries.push(current.join(' '));
 
-  const entryRe = /^[\[【](.+?)[\]】]\s*[(（](.+?)[)）]\s*[-—–]\s*(.+)$/;
+  const entryRe = /^[\[【](.+?)[\]】]\s*[(（](.+?)[)）]\s*[-—–:：]\s*(.+)$/;
   const out: Array<{ name: string; layer: Layer; definition: string }> = [];
   for (const entry of entries) {
     const match = entryRe.exec(entry);
@@ -96,6 +99,13 @@ function parseConceptsBlock(
     out.push({ name, layer, definition });
   }
   return out;
+}
+
+function stripBulletAndBold(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(/^[*\-•·]\s+/, '');
+  s = s.replace(/\*\*/g, '');
+  return s.trim();
 }
 
 function pickLayer(raw: string): Layer {
