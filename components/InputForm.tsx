@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { saveArticle, upsertConcept } from '@/lib/storage';
-import type { Article, GenerateArticleResult } from '@/lib/types';
 
 export default function InputForm() {
   const router = useRouter();
@@ -29,30 +27,7 @@ export default function InputForm() {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
-      const result = (await res.json()) as GenerateArticleResult;
-
-      const id = crypto.randomUUID();
-      const createdAt = new Date().toISOString();
-      const article: Article = {
-        id,
-        title: title.trim(),
-        raw_text: rawText.trim(),
-        created_at: createdAt,
-        sections: {
-          mechanism: result.mechanism,
-          history: result.history,
-          uncertainty: result.uncertainty,
-        },
-        concepts: result.concepts.map((c) => ({ name: c.name, layer: c.layer })),
-      };
-      saveArticle(article);
-      for (const c of result.concepts) {
-        upsertConcept(
-          { name: c.name, layer: c.layer, definition: c.definition },
-          id,
-          createdAt,
-        );
-      }
+      const { id } = (await res.json()) as { id: string };
       router.push(`/article/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'unknown error');

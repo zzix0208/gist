@@ -87,7 +87,8 @@ function parseConceptsBlock(
   const entries: string[] = [];
   let current: string[] = [];
   for (const line of lines) {
-    if (/^[\[【]/.test(line)) {
+    // a new concept starts on a line that is bracketed OR carries a (层) tag
+    if (/^[\[【]/.test(line) || /[(（]\s*(宏观|产业|微观|技术)\s*[)）]/.test(line)) {
       if (current.length) entries.push(current.join(' '));
       current = [line];
     } else if (current.length) {
@@ -96,7 +97,10 @@ function parseConceptsBlock(
   }
   if (current.length) entries.push(current.join(' '));
 
-  const entryRe = /^[\[【](.+?)[\]】]\s*[(（](.+?)[)）]\s*[-—–:：]\s*(.+)$/;
+  // Accept both bracketed "[名] (层) - 定义" and bare/bold "名 (层) - 定义"
+  // (the model often drops the [] and uses **bold** instead). Brackets optional.
+  const entryRe =
+    /^[\[【]?\s*([^\]】(（]+?)\s*[\]】]?\s*[(（]\s*([^)）]*?)\s*[)）]\s*[-—–:：]\s*(.+)$/;
   const out: Array<{ name: string; layer: Layer; definition: string }> = [];
   for (const entry of entries) {
     const match = entryRe.exec(entry);

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateArticle } from '@/lib/llm';
+import { createArticleWithConcepts } from '@/lib/data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,11 +24,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'raw_text is required' }, { status: 400 });
   }
 
-  try {
-    const result = await generateArticle(title, raw_text);
-    return NextResponse.json(result);
-  } catch (err) {
+  const result = await generateArticle(title, raw_text).catch((err: unknown) => {
     console.error('[generate-article] LLM call failed:', err);
+    return null;
+  });
+  if (!result) {
     return NextResponse.json({ error: 'LLM call failed' }, { status: 500 });
+  }
+
+  try {
+    const { id } = await createArticleWithConcepts({
+      title: title.trim(),
+      rawText: raw_text.trim(),
+      sections: {
+        mechanism: result.mechanism,
+        history: result.history,
+        uncertainty: result.uncertainty,
+      },
+      concepts: result.concepts,
+    });
+    return NextResponse.json({ id });
+  } catch (err) {
+    console.error('[generate-article] DB save failed:', err);
+    return NextResponse.json({ error: 'DB save failed' }, { status: 500 });
   }
 }

@@ -1,0 +1,54 @@
+// Prisma schema — see MIGRATION.md for the full design rationale.
+// Edit this file to change the DB structure, then run: npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection (app runtime queries)
+  directUrl = env("DIRECT_URL")   // direct connection (migrations / DDL)
+}
+
+model Article {
+  id        String   @id @default(cuid()) // server-generated id
+  title     String
+  sourceUrl String?  @map("source_url")
+  rawText   String   @map("raw_text")
+  createdAt DateTime @default(now()) @map("created_at") // server time
+
+  // the 4-section interpretation, flat columns
+  mechanism   String
+  history     String
+  uncertainty String
+
+  concepts ArticleConcept[]
+
+  @@index([createdAt])
+  @@map("articles")
+}
+
+model Concept {
+  name       String   @id // natural key; the app identifies concepts by name
+  layer      String // 宏观 / 产业 / 微观 / 技术 (plain string for now)
+  definition String
+  firstSeen  DateTime @default(now()) @map("first_seen")
+
+  appearances ArticleConcept[]
+
+  @@map("concepts")
+}
+
+model ArticleConcept {
+  articleId   String  @map("article_id")
+  conceptName String  @map("concept_name")
+  role        String? // reserved: the concept's role in this specific article (backlog feature)
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptName], references: [name], onDelete: Cascade)
+
+  @@id([articleId, conceptName]) // composite PK: a concept appears at most once per article
+  @@index([conceptName])
+  @@map("article_concepts")
+}

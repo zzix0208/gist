@@ -7,13 +7,13 @@
 **给谁用**：对财经感兴趣但缺少持续阅读习惯的成年人。第一用户 = 项目作者本人 (dogfood)。
 
 **解决什么**：
-- 看不懂传导链路 (事件如何影响经济/产业)
+- 看不懂传导链路 (事件如何影响经济 / 产业)
 - 没有历史参照 (不知道现在像不像哪一年的什么 case)
 - 概念零散, 没有累积成体系
 
-**怎么解**：每条新闻拆成四段解读 (机制/历史/不确定性/概念) + 概念入库。概念库自动累积, 跨新闻形成知识网络。
+**怎么解**：每条新闻拆成四段解读 (机制 / 历史 / 不确定性 / 概念) + 概念入库。概念库自动累积, 跨新闻形成知识网络。
 
-输入新闻不限层级 (宏观政策 / 产业新规 / 公司事件 / 数据公布 / 地缘动态都可以), 但解读统一聚焦经济/产业影响。
+输入新闻不限层级 (宏观政策 / 产业新规 / 公司事件 / 数据公布 / 地缘动态都可以), 但解读统一聚焦经济 / 产业影响。
 
 ---
 
@@ -31,7 +31,7 @@ Sitemap:
 ```text
 /                       粘新闻, 输入
 /article/[id]           单条解读 (四段 + 概念)
-/concepts               概念库 list view (按时间/频次/字母排序)
+/concepts               概念库 list view (按时间 / 频次 / 字母排序)
 /concepts/[name]        单概念详情 (定义 + 出现过的 article 列表)
 ```
 
@@ -119,7 +119,7 @@ Sitemap:
 
 ### 技术栈
 
-Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / @google/generative-ai (Demo Gemini 3.5 Flash) → 后续切 DeepSeek (兼容 OpenAI API, openai SDK) / localStorage (v0 单用户) / Vercel 部署
+Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / @google/generative-ai (Gemini 3.5 Flash) → 后续可切 DeepSeek (兼容 OpenAI API, openai SDK) / Supabase Postgres + Prisma (服务端读写, 取代 localStorage) / Vercel 部署。
 
 ### Data schema
 
@@ -127,7 +127,7 @@ Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / @go
 type Layer = '宏观' | '产业' | '微观' | '技术';
 
 type Article = {
-  id: string;              // uuid
+  id: string;              // cuid, 服务端生成
   title: string;
   source_url?: string;
   raw_text: string;
@@ -148,9 +148,10 @@ type Concept = {
   appearances: string[];   // article id 列表
 };
 
-// localStorage keys:
-//   'articles' → Article[]
-//   'concepts' → Record<string, Concept>
+// 持久化在 Postgres, 经 Prisma (见 prisma/schema.prisma):
+//   表: articles / concepts / article_concepts (多对多连接表)
+//   id + created_at 服务端生成; 概念↔文章为多对多
+//   服务端数据层在 lib/data.ts (取代旧的 lib/storage.ts)
 ```
 
 ### API
@@ -158,12 +159,7 @@ type Concept = {
 ```text
 POST /api/generate-article
   req: { title: string, raw_text: string }
-  res: { 
-    mechanism: string, 
-    history: string, 
-    uncertainty: string, 
-    concepts: Array<{ name: string, layer: Layer, definition: string }> 
-  }
+  res: { id: string }   // 生成后即在服务端存库, 返回新 article 的 id, 客户端据此跳转
 ```
 
 Provider 抽象在 `lib/llm.ts`, 根据 `process.env.LLM_PROVIDER` 切 Gemini / DeepSeek。
@@ -175,20 +171,29 @@ Markdown parser 注意点: 已修一次 bug。模型实际输出格式带 markdo
 ```text
 .
 ├── app/
-│   ├── page.tsx                       # / (待做, Step 4)
-│   ├── article/[id]/page.tsx          # 待做, Step 5
-│   ├── concepts/page.tsx              # 待做, Step 6
-│   ├── concepts/[name]/page.tsx       # 待做, Step 6
-│   ├── api/generate-article/route.ts  # ✓ Step 3 完成
-│   ├── layout.tsx
+│   ├── page.tsx                       # 首页 (粘新闻)
+│   ├── article/[id]/page.tsx          # 单条解读
+│   ├── concepts/page.tsx              # 概念库列表 (服务端查库)
+│   ├── concepts/[name]/page.tsx       # 单概念详情 (服务端查库)
+│   ├── concepts/_components/SortableConceptList.tsx  # 列表排序 (客户端)
+│   ├── api/generate-article/route.ts  # POST endpoint
+│   ├── layout.tsx                     # 全局布局 + Nav
 │   └── globals.css
-├── components/                        # 待做 Step 4+
+├── components/
+│   ├── ArticleView.tsx                # 解读渲染
+│   ├── InputForm.tsx                  # 首页表单 (提交→跳转)
+│   ├── LocalTime.tsx                  # 本地时区时间戳 (客户端)
+│   └── Nav.tsx                        # 顶部导航
 ├── lib/
-│   ├── prompts.ts                     # ✓ v5 prompt
-│   ├── storage.ts                     # ✓ localStorage helpers
-│   ├── llm.ts                         # ✓ Provider 抽象 + parser
-│   └── types.ts                       # ✓ Article/Concept/Layer
-├── .env.local                         # API key, 不上 git
+│   ├── prompts.ts                     # v5 prompt
+│   ├── db.ts                          # Prisma client 单例 (server-only)
+│   ├── data.ts                        # 服务端数据层 (取代 storage.ts)
+│   ├── llm.ts                         # Provider 抽象 + parser
+│   └── types.ts                       # Article / Layer / 视图类型
+├── prisma/
+│   └── schema.prisma                  # 3 表: articles/concepts/article_concepts
+├── .env                               # 数据库连接串, 不上 git
+├── .env.local                         # LLM API key, 不上 git
 ├── .env.example                       # 模板
 ├── .gitignore
 └── package.json
@@ -200,45 +205,47 @@ Markdown parser 注意点: 已修一次 bug。模型实际输出格式带 markdo
 
 API key 是 server-only secret。客户端代码任何情况下都不能看到 key。
 
-```text
-1. env 变量命名
-   ✓ GEMINI_API_KEY        (server only)
-   ✓ DEEPSEEK_API_KEY      (server only)
-   ✗ 不允许任何 NEXT_PUBLIC_*_API_KEY 前缀
-     (NEXT_PUBLIC_ 会被 webpack 注入到 client bundle, 暴露)
+**1. env 变量命名**
 
-2. LLM SDK 只在 server 端实例化
-   - lib/llm.ts 顶部有 'server-only' import 守卫
-   - import { generateArticle } 只能在 api/*/route.ts
-   - 不能在 'use client' 组件里直接 import LLM SDK
+- ✓ `GEMINI_API_KEY` (server only)
+- ✓ `DEEPSEEK_API_KEY` (server only)
+- ✗ 不允许任何 `NEXT_PUBLIC_*_API_KEY` 前缀 (`NEXT_PUBLIC_` 会被 webpack 注入到 client bundle, 暴露)
 
-3. LLM 调用必须走 API route
-   - 客户端组件: fetch('/api/generate-article')
-   - 不允许客户端 import @google/generative-ai 或 openai SDK
+**2. LLM SDK 只在 server 端实例化**
 
-4. .env.local 不上 git
-   - .gitignore 必须包含 .env.local 和 .env*.local
-   - 仓库根有 .env.example (列 key 名无 value)
+- `lib/llm.ts` 顶部有 `'server-only'` import 守卫
+- `import { generateArticle }` 只能在 `api/*/route.ts`
+- 不能在 `'use client'` 组件里直接 import LLM SDK
 
-5. Vercel 部署
-   - API key 在 Dashboard > Settings > Environment Variables 配置
-   - 不要 hardcode 在代码里, 不要 commit .env.production
+**3. LLM 调用必须走 API route**
 
-6. 错误返回不要泄露 key
-   - try/catch 抓 LLM SDK 错误
-   - 返回给前端的 error message 只说 "LLM call failed"
-   - 不要把 raw error (可能含 key 片段) 返回
-```
+- 客户端组件: `fetch('/api/generate-article')`
+- 不允许客户端 import `@google/generative-ai` 或 `openai` SDK
+
+**4. `.env.local` 不上 git**
+
+- `.gitignore` 必须包含 `.env.local` 和 `.env*.local`
+- 仓库根有 `.env.example` (列 key 名无 value)
+
+**5. Vercel 部署**
+
+- API key 在 Dashboard > Settings > Environment Variables 配置
+- 不要 hardcode 在代码里, 不要 commit `.env.production`
+
+**6. 错误返回不要泄露 key**
+
+- try / catch 抓 LLM SDK 错误
+- 返回给前端的 error message 只说 "LLM call failed"
+- 不要把 raw error (可能含 key 片段) 返回
 
 ### 部署后自检
 
-```text
 DevTools Network tab:
-  1. 触发"生成解读"
-  2. 看 /api/generate-article 的 request headers + body
-  3. 不该出现 GEMINI_API_KEY 字符串
-  4. View Page Source → Ctrl+F "API_KEY" 应该完全无结果
-```
+
+1. 触发"生成解读"
+2. 看 `/api/generate-article` 的 request headers + body
+3. 不该出现 `GEMINI_API_KEY` / `AIza...` 字符串
+4. View Page Source → `Cmd + F` 搜 "API_KEY" 应该完全无结果
 
 ---
 
@@ -246,102 +253,66 @@ DevTools Network tab:
 
 ### 当前
 
-```text
-代码实现: Step 1-8 完成, v0 已上线
-最新 commit: 4a73393 (branch: main, 共 13 个 commit)
-项目目录: ~/Desktop/finews-agent/
-线上 URL: https://finews-agent.vercel.app/
-开发环境: Claude Code (desktop app)
-```
+- 代码实现: Step 1-8 完成, v0 已上线
+- 最新 commit: `4a73393` (branch: main, 共 13 个 commit)
+- 项目目录: `~/Desktop/finews-agent/`
+- 线上 URL: https://finews-agent.vercel.app/
+- 开发环境: Claude Code (desktop app)
 
-具体已完成:
+### 具体已完成
 
-```text
-Phase A (prompt 验证, Gemini AI Studio 手工跑):
-  v5 prompt 通过 4.5+/5, 已 freeze 在 lib/prompts.ts
+**Phase A (prompt 验证, Gemini AI Studio 手工跑)**:
 
-Phase B 代码实现:
-  Step 1: Next.js 16 + TypeScript + Tailwind v4 项目初始化
-          dev server 跑通
-  Step 2: lib/ scaffolding (types/storage/prompts/llm.ts)
-          v5 prompt 已嵌入 lib/prompts.ts
-  Step 3: api/generate-article/route.ts 跑通
-          真实 Gemini API 调用 verified (gemini-3.5-flash 可用)
-          端到端测试通过: HTTP 200, ~14s 一条 article
-          markdown parser 修了一次 bug (stripBulletAndBold)
-  Step 4: 首页 + InputForm + 提交流程
-  Step 5: /article/[id] 真渲染 + ArticleView
-  Step 6: /concepts 列表 + 详情 + 顶部 nav
-  Step 7: markdown 渲染 + 视觉重排 + responsive
-  Step 8: Vercel deploy + 3 条新闻 verify
-          线上 URL: https://finews-agent.vercel.app/
-```
+- v5 prompt 通过 4.5+/5, 已 freeze 在 `lib/prompts.ts`
+
+**Phase B 代码实现**:
+
+- Step 1: Next.js 16 + TypeScript + Tailwind v4 项目初始化, dev server 跑通
+- Step 2: `lib/` scaffolding (types / storage / prompts / llm.ts), v5 prompt 已嵌入 `lib/prompts.ts`
+- Step 3: `api/generate-article/route.ts` 跑通. 真实 Gemini API 调用 verified (`gemini-3.5-flash`). 端到端测试通过: HTTP 200, ~14s 一条 article. markdown parser 修了一次 bug (`stripBulletAndBold`).
+- Step 4: 首页 + InputForm + 提交流程
+- Step 5: `/article/[id]` 真渲染 + ArticleView
+- Step 6: `/concepts` 列表 + 详情 + 顶部 nav
+- Step 7: markdown 渲染 + 视觉重排 + responsive
+- Step 8: Vercel deploy + 3 条新闻 verify. 线上 URL: https://finews-agent.vercel.app/
+
+**存储迁移 (localStorage → Supabase Postgres + Prisma, 2026-05-30, 详见 MIGRATION.md)**:
+
+- 代码部分完成: 建库 + Prisma schema (3 表) / 写入路径 (API route 存库 + lib/data.ts) / 文章页 + 概念库两页改服务端查库 / 删除 lib/storage.ts。
+- 期间修了概念 parser (方括号改可选, 兼容模型实际输出), 时间戳改 LocalTime 客户端组件避免 SSR 时区不一致。
+- `npm run build` 通过。**部署 (Vercel env 配置 + migrate deploy) 留待以后单独做。**
 
 ### 下一步
 
-```text
-v0 完成. 后续待规划 v0.5 (RSSHub 自动拉 + 邮箱 push).
-短期 backlog 见本节 "已知风险/注意" 部分.
-```
+v0 完成。后续待规划 v0.5 (RSSHub 自动拉 + 邮箱 push)。短期 backlog 见下面"已知风险 / Backlog"。
+v0.5: 接 RSSHub 自动拉新闻, 每天 push 5 条 headline
+      简单 schedule (Vercel Cron)
+v1:   迁存储到 Postgres + Prisma (✓ 存储代码已完成, 见 MIGRATION.md; 待部署); 加 user auth
+v1.5: 加 critic agent (二次 LLM 调用自检)
+v2:   引入 LangGraph 重构 agent loop (Python
+      microservice, deploy 到 Railway)
+v2.5: Agentic RAG (Wikipedia 财经 / FRED / 央行
+      声明做 KB, vector DB Pinecone/Qdrant)
+v3:   真 KG 图可视化 + 关系类型识别
+v3.5: Eval pipeline + LangSmith observability
+v4:   Spaced repetition / quiz / adaptive curriculum
 
-### 已知风险/注意
+### 已知风险 / Backlog
 
-```text
+**技术 / 部署**:
+
 - markdown parser 是 v0 实现, 后续遇到新边角情况可能要继续修
-- Vercel 部署时需要在 Dashboard 配置 GEMINI_API_KEY 环境变量
-- 跑 LLM 会消耗 Gemini free tier quota, 一条约 $0.005, 
-  调试时注意不要无限制重试
-- dev 环境下切走应用 (Chrome 进入后台) 等 LLM 响应,
-  偶现 "LLM call failed". 怀疑是 dev server hot
-  reload / Mac sleep / Chrome tab throttling. 
-  deploy 到 Vercel 后大概率消失 (serverless 不依
-  赖本地状态). 真要修需要复现时抓 dev server log
-  定位.
-- 历史 case 缺少 "那次后来发生了什么" (影响 / 结果):
-  当前 prompt 只要求 "哪里像 / 哪里不像", 缺时间上
-  的延伸. 后续 prompt 优化时加约束: 历史段除了对比,
-  还要说那次后续 6-24 个月的关键发展.
-- 历史 case 段格式不一致: 不同新闻输出可能用 "像/
-  不像"、"相似点/不同点"、"同/异" 等不同标签, 且
-  markdown 排版 (bold / bullet / 缩进) 也有差异.
-  原因: prompt 没强制固定格式. 后续 prompt 优化时
-  统一: 强制用 2 个固定标签 (建议 "**相似点**:" /
-  "**不同点**:"), 强制用统一的 markdown bullet 格式.
-- concept definition 含 "本新闻" 表述, 在 concept 详情
-  页 cross-article 视图下 misleading: "本新闻" 实际只指
-  首次抽到时那条, 后续出现的新闻语境丢失. 短期 (prompt
-  优化时): 改 prompt 让 definition 只写通用定义, 不带
-  "本新闻...". 长期 (v1): schema 拆字段, 每条 article
-  记录用到的 concept 的具体角色, concept 详情页展示所
-  有出现新闻各自的角色 list.
-```
-1. 落脚点空泛, "与我无关"
-   → prompt 问题
-   → 加约束: 链路终点要量化 (涨幅/金额) 或落到
-     "对个人意味着什么"
-   
-2. 术语解释没出现
-   → prompt 第 7 条本来要求了, 模型没执行到位
-   → 加强约束或加 few-shot example
-   
-3. 不确定性版面太大
-   → 双重问题:
-     - prompt: 信息密度可以再压 (限字数)
-     - UI: 视觉权重 Step 7 调 (小字号 / 折叠 / 
-       页面下移)
-     
-4. concept 没解释
-   → 先想清楚要的形态再说:
-     - 段落里 inline 解释 → 改 prompt
-     - 鼠标悬停 tooltip → UI 工作
-     - 底部 chip 点开看 (现在的样子)
+- 跑 LLM 会消耗 Gemini free tier quota, 一条约 $0.005, 调试时注意不要无限制重试
+- dev 环境下切走应用 (Chrome 进入后台) 等 LLM 响应, 偶现 "LLM call failed". 怀疑是 dev server hot reload / Mac sleep / Chrome tab throttling. deploy 到 Vercel 后大概率消失. 真要修需要复现时抓 dev server log 定位.
 
-### Phase A 评分历史 (供参考)
+**Prompt + 产品 backlog** (deploy 跑更多样本后回头处理):
 
-```text
-v1 原版            3.5 - 3.75
-v2 加机制视角约束  4.25
-v3 加概念层级标签  4.25 - 4.50
-v4 删"关联" section 4.50
-v5 换 user 身份 + 加链路具体性 + 加术语解释 4.75 (final)
-```
+- **落脚点空泛 / 与我无关**: 机制链路终点抽象, 读者感觉跟自己没关系. 加约束: 链路终点要量化 (涨幅 / 金额) 或落到 "对个人意味着什么".
+- **术语解释没出现**: prompt 第 7 条本来要求了, 模型没执行. 加强约束或加 few-shot example.
+- **历史 case 缺 "后来发生了什么"**: 当前 prompt 只要求 "哪里像 / 哪里不像", 缺时间延伸. 加约束: 还要说那次后续 6-24 个月的关键发展.
+- **历史 case 格式不一致**: 不同新闻输出可能用 "像 / 不像"、"相似点 / 不同点"、"同 / 异" 等不同标签, markdown 排版也有差异. 加约束: 强制用固定 2 个标签 (建议 `**相似点**:` / `**不同点**:`) + 统一 bullet 格式.
+- **concept definition 含 "本新闻"**: 在 concept 详情页 cross-article 视图下 misleading ("本新闻" 实际只指首次抽到时那条). 短期: prompt 让 definition 只写通用定义, 不带 "本新闻...". 长期 (v1 schema): 每条 article 记录用到的 concept 的具体角色, concept 详情页展示所有出现新闻各自的角色 list.
+- **concept name 嵌入括号解释**: LLM 偶尔输出 `[业绩指引 (公司对未来业绩的官方预测)]` 这种 name 字段含括号的格式, 导致 concept 列表不一致, 且会让"同 concept 不同表述"无法 merge. 短期: prompt 加约束 name 纯净. 长期: parser 也加防御 (检测 name 含 `(` 时截断或拒绝).
+- **concept 在正文是否解释**: 当前底部 chip 点开看. 备选: 段落里 inline 解释 (改 prompt) / 鼠标悬停 tooltip (UI 工作). 先决定形态再定改哪里.
+
+

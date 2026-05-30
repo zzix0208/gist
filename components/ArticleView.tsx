@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import type { Article } from '@/lib/types';
+import LocalTime from '@/components/LocalTime';
 
 export default function ArticleView({ article }: { article: Article }) {
   return (
@@ -10,7 +11,7 @@ export default function ArticleView({ article }: { article: Article }) {
       <header>
         <h1 className="text-2xl font-semibold">{article.title}</h1>
         <p className="text-xs text-zinc-500 mt-1">
-          {new Date(article.created_at).toLocaleString()}
+          <LocalTime iso={article.created_at} />
         </p>
       </header>
 

@@ -1,47 +1,18 @@
-'use client';
-
-import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { loadConcepts, getArticle } from '@/lib/storage';
-import type { Concept } from '@/lib/types';
+import { getConcept } from '@/lib/data';
+import LocalTime from '@/components/LocalTime';
 
-type Appearance = { id: string; title: string; created_at: string };
+// Always read the latest from the DB.
+export const dynamic = 'force-dynamic';
 
-export default function ConceptDetailPage({
+export default async function ConceptDetailPage({
   params,
 }: {
   params: Promise<{ name: string }>;
 }) {
-  const { name } = use(params);
+  const { name } = await params;
   const decoded = decodeURIComponent(name);
-  const [concept, setConcept] = useState<Concept | undefined>(undefined);
-  const [appearances, setAppearances] = useState<Appearance[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const c = loadConcepts()[decoded];
-    // localStorage is client-only; read once on mount to avoid hydration mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConcept(c);
-    if (c) {
-      const apps = c.appearances
-        .map((id) => {
-          const a = getArticle(id);
-          return a ? { id: a.id, title: a.title, created_at: a.created_at } : null;
-        })
-        .filter((x): x is Appearance => x !== null);
-      setAppearances(apps);
-    }
-    setMounted(true);
-  }, [decoded]);
-
-  if (!mounted) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-zinc-500">加载中...</p>
-      </main>
-    );
-  }
+  const concept = await getConcept(decoded);
 
   if (!concept) {
     return (
@@ -54,6 +25,8 @@ export default function ConceptDetailPage({
     );
   }
 
+  const { appearances } = concept;
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
       <header>
@@ -62,7 +35,7 @@ export default function ConceptDetailPage({
           <h1 className="text-2xl font-semibold">{concept.name}</h1>
         </div>
         <p className="text-xs text-zinc-500 mt-1">
-          首次出现 {new Date(concept.first_seen).toLocaleString()}
+          首次出现 <LocalTime iso={concept.firstSeen} />
         </p>
       </header>
 
@@ -88,7 +61,7 @@ export default function ConceptDetailPage({
                   {a.title}
                 </Link>
                 <span className="text-xs text-zinc-400">
-                  {new Date(a.created_at).toLocaleString()}
+                  <LocalTime iso={a.createdAt} />
                 </span>
               </li>
             ))}
