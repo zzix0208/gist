@@ -8,7 +8,7 @@ export default function Home() {
       <header className="w-full max-w-2xl">
         <h1 className="text-2xl font-semibold">财经新闻学习</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-          粘新闻 → 生成机制 / 历史 / 不确定性 / 概念
+          理解机制，积累概念
         </p>
       </header>
       <InputForm />

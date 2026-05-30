@@ -15,7 +15,13 @@ export default function ArticleView({ article }: { article: Article }) {
         </p>
       </header>
 
-      <Section heading="机制 (传导链路)" body={article.sections.mechanism} />
+      {article.sections.summary && (
+        <p className="text-base font-semibold leading-7">
+          {article.sections.summary}
+        </p>
+      )}
+
+      <Section heading="机制" body={article.sections.mechanism} />
 
       <section>
         <h2 className="text-lg font-semibold mb-2">概念</h2>
@@ -32,12 +38,6 @@ export default function ArticleView({ article }: { article: Article }) {
           ))}
         </div>
       </section>
-
-      <Section
-        heading="历史 (类似 case)"
-        body={article.sections.history}
-        headingClass="text-base font-semibold"
-      />
 
       <Section
         heading="不确定性"
@@ -64,7 +64,7 @@ function Section({
     <section>
       <h2 className={`${headingClass} mb-2`}>{heading}</h2>
       <div
-        className={`${bodyClass} [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1`}
+        className={`${bodyClass} [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-normal [&_em]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1`}
       >
         <ReactMarkdown>{body}</ReactMarkdown>
       </div>

@@ -37,8 +37,8 @@ export async function POST(req: Request) {
       title: title.trim(),
       rawText: raw_text.trim(),
       sections: {
+        summary: result.summary,
         mechanism: result.mechanism,
-        history: result.history,
         uncertainty: result.uncertainty,
       },
       concepts: result.concepts,

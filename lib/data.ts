@@ -12,7 +12,7 @@ export async function createArticleWithConcepts(input: {
   title: string;
   rawText: string;
   sourceUrl?: string;
-  sections: { mechanism: string; history: string; uncertainty: string };
+  sections: { summary: string; mechanism: string; uncertainty: string };
   concepts: NewConcept[];
 }): Promise<{ id: string }> {
   // De-dupe by name: the LLM can emit the same concept twice, which would
@@ -30,8 +30,10 @@ export async function createArticleWithConcepts(input: {
         title: input.title,
         rawText: input.rawText,
         sourceUrl: input.sourceUrl,
+        summary: input.sections.summary,
         mechanism: input.sections.mechanism,
-        history: input.sections.history,
+        // history 段已下线; 列保留以后可复用, 暂写空串(列非空)
+        history: '',
         uncertainty: input.sections.uncertainty,
       },
     });
@@ -76,8 +78,8 @@ export async function getArticle(id: string): Promise<Article | null> {
     raw_text: row.rawText,
     created_at: row.createdAt.toISOString(),
     sections: {
+      summary: row.summary,
       mechanism: row.mechanism,
-      history: row.history,
       uncertainty: row.uncertainty,
     },
     concepts: row.concepts.map((ac) => ({

@@ -9,16 +9,16 @@ export type Article = {
   raw_text: string;
   created_at: string;
   sections: {
+    summary: string;
     mechanism: string;
-    history: string;
     uncertainty: string;
   };
   concepts: Array<{ name: string; layer: Layer }>;
 };
 
 export type GenerateArticleResult = {
+  summary: string;
   mechanism: string;
-  history: string;
   uncertainty: string;
   concepts: Array<{ name: string; layer: Layer; definition: string }>;
 };

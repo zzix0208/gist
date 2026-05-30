@@ -18,7 +18,9 @@ model Article {
   rawText   String   @map("raw_text")
   createdAt DateTime @default(now()) @map("created_at") // server time
 
-  // the 4-section interpretation, flat columns
+  // the interpretation, flat columns. summary = bold lead sentence.
+  // history is retained but no longer written/rendered (kept for possible reuse).
+  summary     String @default("")
   mechanism   String
   history     String
   uncertainty String

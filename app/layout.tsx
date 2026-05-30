@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "财经新闻学习 Agent",
-  description: "粘新闻 → 生成机制 / 历史 / 不确定性 / 概念",
+  description: "理解机制，积累概念",
 };
 
 export default function RootLayout({
