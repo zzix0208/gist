@@ -25,6 +25,14 @@ export type GenerateArticleResult = {
 
 // View shapes returned by lib/data.ts. Kept here (not in data.ts) so client
 // components can import the types without pulling in the server-only module.
+export type ArticleListItem = {
+  id: string;
+  title: string;
+  summary: string;
+  source_url?: string;
+  created_at: string;
+};
+
 export type ConceptListItem = {
   name: string;
   layer: Layer;

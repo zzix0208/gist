@@ -1,6 +1,6 @@
 import 'server-only';
 import { db } from './db';
-import type { Article, Layer, ConceptListItem, ConceptDetail } from './types';
+import type { Article, Layer, ConceptListItem, ConceptDetail, ArticleListItem } from './types';
 
 // Server-side data layer (Prisma). All article/concept reads and writes go here.
 // createArticleWithConcepts is the reuse boundary: the API route uses it today,
@@ -87,6 +87,31 @@ export async function getArticle(id: string): Promise<Article | null> {
       layer: ac.concept.layer as Layer,
     })),
   };
+}
+
+export async function listArticles(limit: number): Promise<ArticleListItem[]> {
+  const rows = await db.article.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: { id: true, title: true, summary: true, sourceUrl: true, createdAt: true },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    summary: r.summary,
+    source_url: r.sourceUrl ?? undefined,
+    created_at: r.createdAt.toISOString(),
+  }));
+}
+
+// 抓取去重: 已入库的 sourceUrl 不重复抓 / 生成。
+export async function findExistingSourceUrls(urls: string[]): Promise<Set<string>> {
+  if (urls.length === 0) return new Set();
+  const rows = await db.article.findMany({
+    where: { sourceUrl: { in: urls } },
+    select: { sourceUrl: true },
+  });
+  return new Set(rows.map((r) => r.sourceUrl).filter((u): u is string => !!u));
 }
 
 export async function listConcepts(): Promise<ConceptListItem[]> {

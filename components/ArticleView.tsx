@@ -13,6 +13,16 @@ export default function ArticleView({ article }: { article: Article }) {
         <p className="text-xs text-zinc-500 mt-1">
           <LocalTime iso={article.created_at} />
         </p>
+        {article.source_url && (
+          <a
+            href={article.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+          >
+            查看原文
+          </a>
+        )}
       </header>
 
       {article.sections.summary && (
