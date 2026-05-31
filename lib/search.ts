@@ -2,7 +2,7 @@ import 'server-only';
 
 // Tavily web search client. The fact-check agent calls this as a tool; the LLM
 // decides when and what to search. Deliberately decoupled from any LLM provider
-// — swapping the model (DeepSeek/Gemini/…) never touches this file.
+// — swapping the model never touches this file.
 const TAVILY_URL = 'https://api.tavily.com/search';
 
 export type SearchResult = {

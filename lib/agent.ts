@@ -27,7 +27,7 @@ export async function runSearchAgent(
   const key = process.env.DEEPSEEK_API_KEY;
   if (!key) throw new Error('DEEPSEEK_API_KEY not set');
   const model = modelOverride ?? process.env.DEEPSEEK_MODEL_AGENT ?? 'deepseek-v4-pro';
-  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com' });
+  const client = new OpenAI({ apiKey: key, baseURL: process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com' });
 
   const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {

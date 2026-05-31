@@ -48,7 +48,7 @@ Sitemap:
 
 ### 技术栈
 
-Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / LLM: DeepSeek 默认 (openai SDK; 批处理 deepseek-v4-flash, 搜索 Agent deepseek-v4-pro), Gemini (@google/generative-ai) 备用, 由 `LLM_PROVIDER` 切 / 搜索: Tavily (事实核查 Agent 的 search 工具) / Supabase Postgres + Prisma (服务端读写, 取代 localStorage) / Vercel 部署。
+Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / LLM: DeepSeek (openai SDK, OpenAI 兼容端点; 批处理 deepseek-v4-flash, 搜索 Agent deepseek-v4-pro; 换模型/换 provider 见 lib/llm.ts + .env) / 搜索: Tavily (事实核查 Agent 的 search 工具) / Supabase Postgres + Prisma (服务端读写, 取代 localStorage) / Vercel 部署。
 
 ### Data schema
 
@@ -91,7 +91,7 @@ POST /api/generate-article
   res: { id: string }   // 生成后即在服务端存库, 返回新 article 的 id, 客户端据此跳转
 ```
 
-Provider 抽象在 `lib/llm.ts`, 根据 `process.env.LLM_PROVIDER` 切 Gemini / DeepSeek。
+`lib/llm.ts` 用 openai SDK 走 DeepSeek (OpenAI 兼容端点)。换模型: 设 `DEEPSEEK_MODEL`; 换 provider: 设 `DEEPSEEK_BASE_URL` 指向任何 OpenAI 兼容 API。
 
 Markdown parser 注意点: 已修一次 bug。模型实际输出格式带 markdown bullet + bold 包装 (`* **[名] (层)** - 定义.`), 原 parser 只识别裸格式。当前 parser 含 `stripBulletAndBold()` + 分隔符容错 (`:` / `：` 都接受)。后续遇到新边角情况可能还需修。
 
@@ -136,7 +136,6 @@ API key 是 server-only secret。客户端代码任何情况下都不能看到 k
 
 **1. env 变量命名**
 
-- ✓ `GEMINI_API_KEY` (server only)
 - ✓ `DEEPSEEK_API_KEY` (server only)
 - ✗ 不允许任何 `NEXT_PUBLIC_*_API_KEY` 前缀 (`NEXT_PUBLIC_` 会被 webpack 注入到 client bundle, 暴露)
 
@@ -149,7 +148,7 @@ API key 是 server-only secret。客户端代码任何情况下都不能看到 k
 **3. LLM 调用必须走 API route**
 
 - 客户端组件: `fetch('/api/generate-article')`
-- 不允许客户端 import `@google/generative-ai` 或 `openai` SDK
+- 不允许客户端 import `openai` SDK
 
 **4. `.env.local` 不上 git**
 
@@ -173,7 +172,7 @@ DevTools Network tab:
 
 1. 触发"生成解读"
 2. 看 `/api/generate-article` 的 request headers + body
-3. 不该出现 `GEMINI_API_KEY` / `AIza...` 字符串
+3. 不该出现 `DEEPSEEK_API_KEY` / `sk-...` 字符串
 4. View Page Source → `Cmd + F` 搜 "API_KEY" 应该完全无结果
 
 ---
@@ -190,7 +189,7 @@ DevTools Network tab:
 
 ### 具体已完成
 
-**Phase A (prompt 验证, Gemini AI Studio 手工跑)**:
+**Phase A (prompt 验证, AI Studio 手工跑)**:
 
 - v5 prompt 通过 4.5+/5, 已 freeze 在 `lib/prompts.ts`
 
@@ -198,7 +197,7 @@ DevTools Network tab:
 
 - Step 1: Next.js 16 + TypeScript + Tailwind v4 项目初始化, dev server 跑通
 - Step 2: `lib/` scaffolding (types / storage / prompts / llm.ts), v5 prompt 已嵌入 `lib/prompts.ts`
-- Step 3: `api/generate-article/route.ts` 跑通. 真实 Gemini API 调用 verified (`gemini-3.5-flash`). 端到端测试通过: HTTP 200, ~14s 一条 article. markdown parser 修了一次 bug (`stripBulletAndBold`).
+- Step 3: `api/generate-article/route.ts` 跑通. 真实 LLM API 调用 verified. 端到端测试通过: HTTP 200. markdown parser 修了一次 bug (`stripBulletAndBold`).
 - Step 4: 首页 + InputForm + 提交流程
 - Step 5: `/article/[id]` 真渲染 + ArticleView
 - Step 6: `/concepts` 列表 + 详情 + 顶部 nav
@@ -253,7 +252,7 @@ v4:   Spaced repetition / quiz / adaptive curriculum
 **技术 / 部署**:
 
 - markdown parser 是 v0 实现, 后续遇到新边角情况可能要继续修
-- 跑 LLM 会消耗 Gemini free tier quota, 一条约 $0.005, 调试时注意不要无限制重试
+- 跑 LLM 会消耗 API 额度, 调试时注意不要无限制重试
 - dev 环境下切走应用 (Chrome 进入后台) 等 LLM 响应, 偶现 "LLM call failed". 怀疑是 dev server hot reload / Mac sleep / Chrome tab throttling. deploy 到 Vercel 后大概率消失. 真要修需要复现时抓 dev server log 定位.
 
 **Prompt + 产品 backlog** (deploy 跑更多样本后回头处理):
@@ -266,7 +265,7 @@ v4:   Spaced repetition / quiz / adaptive curriculum
 
 ### 事实核查 Agent: DeepSeek tool-calling 自主循环 + Tavily
 
-已落地 (2026-05-31, 取代原 Gemini grounding 版): 单篇生成 (useSearch:true) 时, 把 search 当工具交给 DeepSeek, 模型在多轮循环里**自己决定要不要搜、搜什么、搜几次、何时停** (真 agent, 非代码写死的流水线)。两阶段: 检索阶段带 tools 自由调用, 收尾不带 tools 出干净 JSON; 搜索结果与原文一起喂模型, 用到的来源去重后 (上限 8 条) 落库展示。
+已落地 (2026-05-31, 取代原 grounding 版): 单篇生成 (useSearch:true) 时, 把 search 当工具交给 DeepSeek, 模型在多轮循环里**自己决定要不要搜、搜什么、搜几次、何时停** (真 agent, 非代码写死的流水线)。两阶段: 检索阶段带 tools 自由调用, 收尾不带 tools 出干净 JSON; 搜索结果与原文一起喂模型, 用到的来源去重后 (上限 8 条) 落库展示。
 
 关键文件: `lib/agent.ts` (runSearchAgent, tool-calling 循环 + MAX_STEPS=4 上限), `lib/search.ts` (Tavily 客户端), `lib/prompts.ts` (buildAgentSystemPrompt / buildAgentFinalizePrompt), `lib/llm.ts` (generateArticle 的 opts.useSearch 派发), prisma Article.sources 列, `components/ArticleView.tsx` (来源区块), `app/api/generate-article/route.ts` (useSearch:true + maxDuration=45)。
 
