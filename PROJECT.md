@@ -343,7 +343,7 @@ v4:   Spaced repetition / quiz / adaptive curriculum
 
 关键文件: `lib/agent.ts` (runSearchAgent, tool-calling 循环 + MAX_STEPS=4 上限), `lib/search.ts` (Tavily 客户端), `lib/prompts.ts` (buildAgentSystemPrompt / buildAgentFinalizePrompt), `lib/llm.ts` (generateArticle 的 opts.useSearch 派发), prisma Article.sources 列, `components/ArticleView.tsx` (来源区块), `app/api/generate-article/route.ts` (useSearch:true + maxDuration=45)。
 
-模型分配: 批处理 / 无搜索生成用 deepseek-v4-flash (快省), 搜索 Agent 用 deepseek-v4-pro (`DEEPSEEK_MODEL` / `DEEPSEEK_MODEL_AGENT` 覆盖)。注意 deepseek-chat 已下架, 用 deepseek-v4 系列。
+模型分配: 批处理 / 无搜索生成用 deepseek-v4-flash (快省), 搜索 Agent 用 deepseek-v4-pro (`DEEPSEEK_MODEL` / `DEEPSEEK_MODEL_AGENT` 覆盖)。注意 deepseek-chat 已下架, 用 deepseek-v4 系列。实测 (2026-05-31): flash 生成约 4s/条、pro 约 20s/条 → flash 快约 5×; 单价 flash $0.14/$0.28 vs pro 常规价 $1.74/$3.48 每百万 token(输入/输出, 来源 api-docs.deepseek.com)→ flash 便宜约 12×。故高频批处理放 flash、低频高质量核查放 pro。
 
 踩坑:
 - Tavily 中文检索必须用 `topic:'general'` + `country:'china'`; `topic:'news'` 实测对中文查询返回无关英文新闻 (news 源偏英文)。
