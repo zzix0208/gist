@@ -14,6 +14,7 @@ export type Article = {
     uncertainty: string;
   };
   concepts: Array<{ name: string; layer: Layer }>;
+  sources?: Source[];
 };
 
 export type GenerateArticleResult = {
@@ -21,6 +22,14 @@ export type GenerateArticleResult = {
   mechanism: string;
   uncertainty: string;
   concepts: Array<{ name: string; layer: Layer; definition: string }>;
+};
+
+// A source the fact-check agent actually retrieved while grounding the answer.
+// Lives here (no 'server-only') so the client ArticleView can import the type.
+export type Source = {
+  title: string;
+  url: string;
+  query?: string;
 };
 
 // View shapes returned by lib/data.ts. Kept here (not in data.ts) so client

@@ -119,7 +119,7 @@ Sitemap:
 
 ### 技术栈
 
-Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / @google/generative-ai (Gemini 3.5 Flash) → 后续可切 DeepSeek (兼容 OpenAI API, openai SDK) / Supabase Postgres + Prisma (服务端读写, 取代 localStorage) / Vercel 部署。
+Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / LLM: DeepSeek 默认 (openai SDK; 批处理 deepseek-v4-flash, 搜索 Agent deepseek-v4-pro), Gemini (@google/generative-ai) 备用, 由 `LLM_PROVIDER` 切 / 搜索: Tavily (事实核查 Agent 的 search 工具) / Supabase Postgres + Prisma (服务端读写, 取代 localStorage) / Vercel 部署。
 
 ### Data schema
 
@@ -276,18 +276,40 @@ DevTools Network tab:
 - Step 7: markdown 渲染 + 视觉重排 + responsive
 - Step 8: Vercel deploy + 3 条新闻 verify. 线上 URL: https://finews-agent.vercel.app/
 
-**存储迁移 (localStorage → Supabase Postgres + Prisma, 2026-05-30, 详见 MIGRATION.md)**:
+**存储迁移 (localStorage → Supabase Postgres + Prisma, 2026-05-30)**:
 
-- 代码部分完成: 建库 + Prisma schema (3 表) / 写入路径 (API route 存库 + lib/data.ts) / 文章页 + 概念库两页改服务端查库 / 删除 lib/storage.ts。
+代码 Step 1-5 全部完成, 读写都在 Postgres:
+
+| Step | 内容 | 状态 |
+|---|---|---|
+| 1 | 建库 / 装 Prisma / 建表 (3 表) | ✅ |
+| 2 | 写入路径 (API route 存库 + lib/data.ts) | ✅ |
+| 3 | 文章详情页改服务端查库 | ✅ |
+| 4 | 概念库两页改服务端查库 | ✅ |
+| 5 | 收尾 (删 lib/storage.ts) + `npm run build` 通过 | ✅ |
+
 - 期间修了概念 parser (方括号改可选, 兼容模型实际输出), 时间戳改 LocalTime 客户端组件避免 SSR 时区不一致。
-- `npm run build` 通过。**部署 (Vercel env 配置 + migrate deploy) 留待以后单独做。**
+- 表: `articles` / `concepts` / `article_concepts` (多对多连接表); id + created_at 服务端生成。
+
+**部署待办 (留待以后单独做)**:
+- [ ] Vercel 配 `DATABASE_URL` + `DIRECT_URL` (Production + Preview)
+- [ ] 对生产库跑 `prisma migrate deploy`
+- [ ] 线上贴新闻验证持久化; DevTools 搜不到数据库串 / 密码
+- [ ] 确认 LocalTime 消除时区 hydration 警告 (线上才显现)
+
+迁移风险备忘: `DATABASE_URL` 池串 (6543) 给应用、`DIRECT_URL` 直连 (5432) 给迁移, 两个都要配; `postinstall: prisma generate` 必须加 (否则 Vercel 构建失败); Supabase 免费项目闲置约一周会暂停, 首次访问要唤醒。
+
+### RSS 自动抓取 (v0.5, 已落地)
+
+手动触发抓取已跑通 (2026-05-31)。关键文件: `lib/rss.ts` (3 个源: 华尔街见闻 / 第一财经走 RSSHub 镜像, 人民网财经原生; rss-parser + HTML 转纯文本), `app/api/fetch-rss/route.ts` (POST: 抓取 → 批内 + 对库去重 → 逐条 generateArticle 入库, 批处理不开搜索省额度), `components/FetchRssButton.tsx` (触发按钮)。
+实测: 一次抓 6 条、去重后用 deepseek-v4-flash 串行生成入库, 零失败 (单条约几秒)。
+待做: 每天定时 push headline + Vercel Cron schedule; 部署后批处理串行耗时需注意函数超时 (改并发或换队列)。
 
 ### 下一步
 
-v0 完成。后续待规划 v0.5 (RSSHub 自动拉 + 邮箱 push)。短期 backlog 见下面"已知风险 / Backlog"。
-v0.5: 接 RSSHub 自动拉新闻, 每天 push 5 条 headline
-      简单 schedule (Vercel Cron)
-v1:   迁存储到 Postgres + Prisma (✓ 存储代码已完成, 见 MIGRATION.md; 待部署); 加 user auth
+v0 完成, v0.5 进行中 (RSS 抓取已落地; 邮件 push + 定时待做)。短期 backlog 见下面"已知风险 / Backlog"。
+v0.5: RSSHub 自动拉 ✓; 待做 每天 push headline + schedule (Vercel Cron)
+v1:   存储迁 Postgres + Prisma (✓ 代码完成, 待部署); 加 user auth
 v1.5: 加 critic agent (二次 LLM 调用自检)
 v2:   引入 LangGraph 重构 agent loop (Python
       microservice, deploy 到 Railway)
@@ -314,5 +336,26 @@ v4:   Spaced repetition / quiz / adaptive curriculum
 - **concept definition 含 "本新闻"**: 在 concept 详情页 cross-article 视图下 misleading ("本新闻" 实际只指首次抽到时那条). 短期: prompt 让 definition 只写通用定义, 不带 "本新闻...". 长期 (v1 schema): 每条 article 记录用到的 concept 的具体角色, concept 详情页展示所有出现新闻各自的角色 list.
 - **concept name 嵌入括号解释**: LLM 偶尔输出 `[业绩指引 (公司对未来业绩的官方预测)]` 这种 name 字段含括号的格式, 导致 concept 列表不一致, 且会让"同 concept 不同表述"无法 merge. 短期: prompt 加约束 name 纯净. 长期: parser 也加防御 (检测 name 含 `(` 时截断或拒绝).
 - **concept 在正文是否解释**: 当前底部 chip 点开看. 备选: 段落里 inline 解释 (改 prompt) / 鼠标悬停 tooltip (UI 工作). 先决定形态再定改哪里.
+
+### 事实核查 Agent: DeepSeek tool-calling 自主循环 + Tavily
+
+已落地 (2026-05-31, 取代原 Gemini grounding 版): 单篇生成 (useSearch:true) 时, 把 search 当工具交给 DeepSeek, 模型在多轮循环里**自己决定要不要搜、搜什么、搜几次、何时停** (真 agent, 非代码写死的流水线)。两阶段: 检索阶段带 tools 自由调用, 收尾不带 tools 出干净 JSON; 搜索结果与原文一起喂模型, 用到的来源去重后 (上限 8 条) 落库展示。
+
+关键文件: `lib/agent.ts` (runSearchAgent, tool-calling 循环 + MAX_STEPS=4 上限), `lib/search.ts` (Tavily 客户端), `lib/prompts.ts` (buildAgentSystemPrompt / buildAgentFinalizePrompt), `lib/llm.ts` (generateArticle 的 opts.useSearch 派发), prisma Article.sources 列, `components/ArticleView.tsx` (来源区块), `app/api/generate-article/route.ts` (useSearch:true + maxDuration=45)。
+
+模型分配: 批处理 / 无搜索生成用 deepseek-v4-flash (快省), 搜索 Agent 用 deepseek-v4-pro (`DEEPSEEK_MODEL` / `DEEPSEEK_MODEL_AGENT` 覆盖)。注意 deepseek-chat 已下架, 用 deepseek-v4 系列。
+
+踩坑:
+- Tavily 中文检索必须用 `topic:'general'` + `country:'china'`; `topic:'news'` 实测对中文查询返回无关英文新闻 (news 源偏英文)。
+- 模型会引用搜来的数字 (如原文未给的往年营收), 准确性依赖搜索源, 靠诚实原则 + uncertainty 段兜底。
+
+实测 (汇金股份收购库珀新能): 模型自主搜 3 次、1 轮收敛, 用搜来的 "汇金 2024 全年营收" 论证是否构成重大资产重组; sources 全为相关中文财经源。
+
+待办 — 量化评测 (开 / 关 agent 对照, 跑简历可用的真数据):
+1. 加临时开关, 同一条新闻分别跑 useSearch true / false。
+2. 选 12-15 条有原文的真实新闻 (news-samples.md 已有 6 条 + 补几条)。
+3. 每条两种模式各生成一次, 人工数 "原文没有且无可靠来源支撑" 的数字 / 事实条数。
+4. 比较两组, 得 "编造从 a 处降到 b 处", 填进简历。
+依赖: DeepSeek + Tavily 额度 (Tavily 免费 1000 次/月)。
 
 

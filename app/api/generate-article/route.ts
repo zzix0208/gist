@@ -4,6 +4,8 @@ import { createArticleWithConcepts } from '@/lib/data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// 核查 agent 比单次调用慢（要联网检索）；给足函数执行时间（部署平台据此设上限）。
+export const maxDuration = 45;
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -24,11 +26,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'raw_text is required' }, { status: 400 });
   }
 
-  const result = await generateArticle(title, raw_text).catch((err: unknown) => {
+  // 单篇生成开启事实核查 agent（联网检索 + 收集来源）。
+  const out = await generateArticle(title, raw_text, { useSearch: true }).catch((err: unknown) => {
     console.error('[generate-article] LLM call failed:', err);
     return null;
   });
-  if (!result) {
+  if (!out) {
     return NextResponse.json({ error: 'LLM call failed' }, { status: 500 });
   }
 
@@ -37,11 +40,12 @@ export async function POST(req: Request) {
       title: title.trim(),
       rawText: raw_text.trim(),
       sections: {
-        summary: result.summary,
-        mechanism: result.mechanism,
-        uncertainty: result.uncertainty,
+        summary: out.result.summary,
+        mechanism: out.result.mechanism,
+        uncertainty: out.result.uncertainty,
       },
-      concepts: result.concepts,
+      concepts: out.result.concepts,
+      sources: out.sources,
     });
     return NextResponse.json({ id });
   } catch (err) {

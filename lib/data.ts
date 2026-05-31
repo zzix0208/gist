@@ -1,6 +1,7 @@
 import 'server-only';
 import { db } from './db';
-import type { Article, Layer, ConceptListItem, ConceptDetail, ArticleListItem } from './types';
+import { Prisma } from '@prisma/client';
+import type { Article, Layer, ConceptListItem, ConceptDetail, ArticleListItem, Source } from './types';
 
 // Server-side data layer (Prisma). All article/concept reads and writes go here.
 // createArticleWithConcepts is the reuse boundary: the API route uses it today,
@@ -14,6 +15,7 @@ export async function createArticleWithConcepts(input: {
   sourceUrl?: string;
   sections: { summary: string; mechanism: string; uncertainty: string };
   concepts: NewConcept[];
+  sources?: Source[];
 }): Promise<{ id: string }> {
   // De-dupe by name: the LLM can emit the same concept twice, which would
   // violate the article_concepts composite PK. Keep the first occurrence.
@@ -35,6 +37,11 @@ export async function createArticleWithConcepts(input: {
         // history 段已下线; 列保留以后可复用, 暂写空串(列非空)
         history: '',
         uncertainty: input.sections.uncertainty,
+        // 事实核查来源 (Json?); 无来源时不写 → NULL。Json 列不要传 null 字面量。
+        sources:
+          input.sources && input.sources.length > 0
+            ? (input.sources as unknown as Prisma.InputJsonValue)
+            : undefined,
       },
     });
 
@@ -86,6 +93,7 @@ export async function getArticle(id: string): Promise<Article | null> {
       name: ac.concept.name,
       layer: ac.concept.layer as Layer,
     })),
+    sources: (row.sources as Source[] | null) ?? undefined,
   };
 }
 

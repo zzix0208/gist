@@ -28,7 +28,8 @@ export async function POST() {
   // 串行：单条失败只跳过该条，不中断整批。
   for (const it of fresh) {
     try {
-      const result = await generateArticle(it.title, it.text);
+      // RSS 批处理不开搜索（避免串行 × 多轮检索拖慢、耗额度）。
+      const { result } = await generateArticle(it.title, it.text);
       await createArticleWithConcepts({
         title: it.title,
         rawText: it.text,

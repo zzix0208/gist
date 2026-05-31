@@ -49,6 +49,26 @@ export default function ArticleView({ article }: { article: Article }) {
         </div>
       </section>
 
+      {article.sources && article.sources.length > 0 && (
+        <section>
+          <h2 className="text-base font-semibold mb-2">核查来源</h2>
+          <ul className="flex flex-col gap-1">
+            {article.sources.map((s) => (
+              <li key={s.url} className="text-xs leading-6">
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {s.title || s.url}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <Section
         heading="不确定性"
         body={article.sections.uncertainty}
