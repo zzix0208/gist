@@ -22,10 +22,11 @@ const MAX_SOURCES = 8; // 入库/展示的来源上限, 避免文章页来源列
 export async function runSearchAgent(
   title: string,
   rawText: string,
+  modelOverride?: string,
 ): Promise<{ result: GenerateArticleResult; sources: Source[] }> {
   const key = process.env.DEEPSEEK_API_KEY;
   if (!key) throw new Error('DEEPSEEK_API_KEY not set');
-  const model = process.env.DEEPSEEK_MODEL_AGENT ?? 'deepseek-v4-pro';
+  const model = modelOverride ?? process.env.DEEPSEEK_MODEL_AGENT ?? 'deepseek-v4-pro';
   const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com' });
 
   const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
