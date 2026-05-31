@@ -1,5 +1,7 @@
 # 财经新闻学习 Agent
 
+> 本文档记录已部署的 Next.js web 产品。Agent 化重建（Python LangGraph + RAG + reflection + 评测）是独立学习版，记录见 `agent/RESULTS.md`。
+
 ## 1. 是什么
 
 一个帮人建立财经知识体系的 web app。
@@ -8,10 +10,9 @@
 
 **解决什么**：
 - 看不懂传导链路 (事件如何影响经济 / 产业)
-- 没有历史参照 (不知道现在像不像哪一年的什么 case)
 - 概念零散, 没有累积成体系
 
-**怎么解**：每条新闻拆成四段解读 (机制 / 历史 / 不确定性 / 概念) + 概念入库。概念库自动累积, 跨新闻形成知识网络。
+**怎么解**：每条新闻拆成结构化解读 (摘要 / 机制 / 不确定性) + 抽取概念入库。概念库自动累积, 跨新闻形成知识网络。
 
 输入新闻不限层级 (宏观政策 / 产业新规 / 公司事件 / 数据公布 / 地缘动态都可以), 但解读统一聚焦经济 / 产业影响。
 
@@ -39,79 +40,7 @@ Sitemap:
 
 ## 3. 核心 prompt (v5)
 
-```text
-你是宏观财经/产业新闻助教.
-服务对象是对财经感兴趣但缺少持续阅读习惯的成年人.
-他们对 GDP / 利率 / 通胀 / CPI 等基本概念有印象,
-但不熟悉这些概念在新闻里的具体运用, 也不熟悉宏观
-传导链路.
-
-# 输入
-新闻标题: {{标题}}
-新闻原文/摘要: {{原文}}
-
-# 任务
-基于这条新闻, 生成以下结构:
-
-## 机制 (传导链路)
-聚焦事件对经济/产业/市场的影响链路, 
-不是技术细节或操作流程本身.
-
-如新闻原文是技术、公司或产品叙事, 必须跳出技术层,
-讨论以下至少 2 项的影响:
-- 产业格局 / 竞争关系
-- 上下游供应链
-- 价格 / 成本结构
-- 政策 / 监管 / 地缘
-- 资本市场预期
-
-用 "X → 中间步骤 → Y" 链路结构, Y 必须落在经济/
-产业层面, 不能停在技术指标 (如"密度提升 53.5%").
-
-【重要】链路里至少有一步必须具体到 行业 / 产品 /
-价格水平 (如"钢铁/化工/水泥的资本开支"、"建材
-价格上行"、"猪肉零售价"), 不能只停在抽象指标
-(如"制造业资本开支""通胀压力""产业格局变化").
-
-每步给出具体机制, 不跳步, 不写空话.
-80-150 字.
-
-## 历史 (类似 case)
-找一个历史上相似事件.
-说明现在情境跟当时哪里像、哪里不像.
-若找不到强类比, 直接说 "没有强类比, 本次情境特殊在 X".
-60-120 字.
-
-## 不确定性标注
-明确指出 3 件事:
-- 这条新闻里不确定的事实 / 数据
-- 解读中你做的关键假设
-- 建议读者自己 verify 的 claim
-
-## 抽取概念
-列出 1-3 个本条新闻涉及的关键概念.
-
-格式:
-[概念名] (宏观 / 产业 / 微观 / 技术) - 一句话定义.
-(本新闻中的角色)
-
-要求:
-- 至少 1 个落在经济/产业层 (即"宏观"或"产业"标签),
-  不能 1-3 个全是"技术"标签
-- 优先选有累积价值的 (跨新闻反复遇到的概念),
-  不是仅本新闻独有的术语
-
-# 输出规则
-1. 必须解释因果链路, 不跳步
-2. 避免空话 ("影响深远""值得关注"等不写)
-3. 必须给出历史参照 (或明确说找不到)
-4. 必须标注不确定性
-5. 简单中文, 短句, 不卖弄术语
-6. 整篇 250-400 字内
-7. 新闻里出现术语 (除最基础的 GDP/通胀外), 
-   首次提及给括号内一句话解释 (≤15 字).
-   例: "PPI (工业品出厂价, 反映工厂端价格变动)"
-```
+见 /Users/issing/Desktop/finews-agent/lib/prompts.ts
 
 ---
 
@@ -133,8 +62,8 @@ type Article = {
   raw_text: string;
   created_at: string;      // ISO datetime
   sections: {
+    summary: string;
     mechanism: string;
-    history: string;
     uncertainty: string;
   };
   concepts: Array<{ name: string; layer: Layer }>;
@@ -308,15 +237,15 @@ DevTools Network tab:
 ### 下一步
 
 v0 完成, v0.5 进行中 (RSS 抓取已落地; 邮件 push + 定时待做)。短期 backlog 见下面"已知风险 / Backlog"。
+下面 v1.5 / v2 / v2.5 / v3.5 已在 agent/ 学习版 (Python LangGraph, 本地跑) 实现, 产品未集成; 详见 agent/RESULTS.md。
+
 v0.5: RSSHub 自动拉 ✓; 待做 每天 push headline + schedule (Vercel Cron)
 v1:   存储迁 Postgres + Prisma (✓ 代码完成, 待部署); 加 user auth
-v1.5: 加 critic agent (二次 LLM 调用自检)
-v2:   引入 LangGraph 重构 agent loop (Python
-      microservice, deploy 到 Railway)
-v2.5: Agentic RAG (Wikipedia 财经 / FRED / 央行
-      声明做 KB, vector DB Pinecone/Qdrant)
+v1.5: critic agent 自检 — 已在 agent/ 学习版实现 (reflection 生成-自检), 产品未集成
+v2:   LangGraph 编排 agent loop — 已在 agent/ 学习版实现 (本地, 非 Railway 微服务), 产品未集成
+v2.5: Agentic RAG — 已在 agent/ 学习版实现 (concept_lookup 检索自建概念库; 未上向量库), 产品未集成
 v3:   真 KG 图可视化 + 关系类型识别
-v3.5: Eval pipeline + LangSmith observability
+v3.5: Eval + observability — 已在 agent/ 学习版实现 (固定样本+确定性指标+逐节点 trace+对照实验; 未接 LangSmith), 产品未集成
 v4:   Spaced repetition / quiz / adaptive curriculum
 
 ### 已知风险 / Backlog
@@ -331,8 +260,6 @@ v4:   Spaced repetition / quiz / adaptive curriculum
 
 - **落脚点空泛 / 与我无关**: 机制链路终点抽象, 读者感觉跟自己没关系. 加约束: 链路终点要量化 (涨幅 / 金额) 或落到 "对个人意味着什么".
 - **术语解释没出现**: prompt 第 7 条本来要求了, 模型没执行. 加强约束或加 few-shot example.
-- **历史 case 缺 "后来发生了什么"**: 当前 prompt 只要求 "哪里像 / 哪里不像", 缺时间延伸. 加约束: 还要说那次后续 6-24 个月的关键发展.
-- **历史 case 格式不一致**: 不同新闻输出可能用 "像 / 不像"、"相似点 / 不同点"、"同 / 异" 等不同标签, markdown 排版也有差异. 加约束: 强制用固定 2 个标签 (建议 `**相似点**:` / `**不同点**:`) + 统一 bullet 格式.
 - **concept definition 含 "本新闻"**: 在 concept 详情页 cross-article 视图下 misleading ("本新闻" 实际只指首次抽到时那条). 短期: prompt 让 definition 只写通用定义, 不带 "本新闻...". 长期 (v1 schema): 每条 article 记录用到的 concept 的具体角色, concept 详情页展示所有出现新闻各自的角色 list.
 - **concept name 嵌入括号解释**: LLM 偶尔输出 `[业绩指引 (公司对未来业绩的官方预测)]` 这种 name 字段含括号的格式, 导致 concept 列表不一致, 且会让"同 concept 不同表述"无法 merge. 短期: prompt 加约束 name 纯净. 长期: parser 也加防御 (检测 name 含 `(` 时截断或拒绝).
 - **concept 在正文是否解释**: 当前底部 chip 点开看. 备选: 段落里 inline 解释 (改 prompt) / 鼠标悬停 tooltip (UI 工作). 先决定形态再定改哪里.
