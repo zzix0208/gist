@@ -15,9 +15,20 @@ import type { GenerateArticleResult, Source } from './types';
 // 拆开既绕过 tools 与 response_format 的兼容性不确定, 也保证最终输出可解析.
 //
 // 契约 { result, sources } 与无搜索路径一致, 前端 ArticleView 无需区分.
+//
+// 这条链路是同步的、卡在 serverless 函数超时里(见 generate-article route 的
+// maxDuration). 三件事保证它跑得进 60s 上限:
+//   - 默认走 flash(实测定稿 ~5.5s, 而 pro ~23s);
+//   - MAX_STEPS=2 + 整体时间预算 DEADLINE_MS, 到点强制停止检索去定稿;
+//   - 每次模型调用都带硬超时, 且检索失败不致命(降级为直接定稿).
 
-const MAX_STEPS = 4; // 最多几轮工具调用, 防模型空转烧额度
+const MAX_STEPS = 2; // 最多几轮工具调用, 防模型空转烧额度 + 控制总耗时
 const MAX_SOURCES = 8; // 入库/展示的来源上限, 避免文章页来源列表过长
+
+// 时间预算: 函数 maxDuration=60s, 留 ~10s 余量(网络 + 入库)给 DEADLINE 之外.
+const DEADLINE_MS = 50_000; // 整条 agent 的软上限
+const FINALIZE_RESERVE_MS = 15_000; // 给定稿预留, 检索到点就停
+const MAX_CALL_MS = 30_000; // 单次模型调用硬超时上限
 
 export async function runSearchAgent(
   title: string,
@@ -26,8 +37,16 @@ export async function runSearchAgent(
 ): Promise<{ result: GenerateArticleResult; sources: Source[] }> {
   const key = process.env.DEEPSEEK_API_KEY;
   if (!key) throw new Error('DEEPSEEK_API_KEY not set');
-  const model = modelOverride ?? process.env.DEEPSEEK_MODEL_AGENT ?? 'deepseek-v4-pro';
-  const client = new OpenAI({ apiKey: key, baseURL: process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com' });
+  // 默认 flash: pro 是推理模型, 每次调用都慢(实测定稿 ~23s), 串行多轮会撞函数超时.
+  const model =
+    modelOverride ?? process.env.DEEPSEEK_MODEL_AGENT ?? process.env.DEEPSEEK_MODEL ?? 'deepseek-v4-flash';
+  // maxRetries:1 — 单次超时后默认会重试 2 次, 在卡超时的同步路径里会把预算翻倍.
+  const client = new OpenAI({
+    apiKey: key,
+    baseURL: process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com',
+    maxRetries: 1,
+  });
+  const start = Date.now();
 
   const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
@@ -59,14 +78,26 @@ export async function runSearchAgent(
   const seen = new Set<string>();
   let searchCount = 0;
 
-  // 检索阶段: 模型自主决定调用 search, 直到它不再调工具或撞上限.
+  // 检索阶段: 模型自主决定调用 search, 直到它不再调工具、撞步数上限或时间预算到点.
   for (let step = 1; step <= MAX_STEPS; step++) {
-    const resp = await client.chat.completions.create({
-      model,
-      messages,
-      tools,
-      tool_choice: 'auto',
-    });
+    const elapsed = Date.now() - start;
+    if (elapsed > DEADLINE_MS - FINALIZE_RESERVE_MS) {
+      console.log(`[agent] step ${step}: budget reached (${elapsed}ms), stop retrieval, finalize`);
+      break;
+    }
+    // 单次硬超时: 不超过给检索剩下的时间, 也不超过 MAX_CALL_MS.
+    const callTimeout = Math.min(MAX_CALL_MS, Math.max(5_000, DEADLINE_MS - FINALIZE_RESERVE_MS - elapsed));
+    let resp;
+    try {
+      resp = await client.chat.completions.create(
+        { model, messages, tools, tool_choice: 'auto' },
+        { timeout: callTimeout },
+      );
+    } catch (err) {
+      // 检索阶段失败不致命: 记日志, 用已检索到的资料直接去定稿.
+      console.warn(`[agent] step ${step} call failed, finalize with what we have:`, err instanceof Error ? err.message : err);
+      break;
+    }
     const msg = resp.choices[0]?.message;
     if (!msg) break;
     messages.push(msg);
@@ -109,13 +140,13 @@ export async function runSearchAgent(
     }
   }
 
-  // 定稿: 不带 tools, 要求干净 JSON.
+  // 定稿: 不带 tools, 要求干净 JSON. 超时取剩余预算(至少 8s), 保证不超过 DEADLINE.
   messages.push({ role: 'user', content: buildAgentFinalizePrompt() });
-  const final = await client.chat.completions.create({
-    model,
-    messages,
-    response_format: { type: 'json_object' },
-  });
+  const finalizeTimeout = Math.max(8_000, DEADLINE_MS - (Date.now() - start));
+  const final = await client.chat.completions.create(
+    { model, messages, response_format: { type: 'json_object' } },
+    { timeout: finalizeTimeout },
+  );
   const text = final.choices[0]?.message?.content ?? '';
   const result = parseStructured(text);
 

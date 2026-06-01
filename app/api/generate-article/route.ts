@@ -5,7 +5,8 @@ import { createArticleWithConcepts } from '@/lib/data';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 // 核查 agent 比单次调用慢（要联网检索）；给足函数执行时间（部署平台据此设上限）。
-export const maxDuration = 45;
+// 用满 Vercel Hobby 的 60s 上限（同 fetch-rss）；agent 内部另有 ~50s 软预算兜底。
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   let body: unknown;
