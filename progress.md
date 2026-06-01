@@ -48,7 +48,7 @@ Sitemap:
 
 ### 技术栈
 
-Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / LLM: DeepSeek (openai SDK, OpenAI 兼容端点; 批处理 deepseek-v4-flash, 搜索 Agent deepseek-v4-pro; 换模型/换 provider 见 lib/llm.ts + .env) / 搜索: Tavily (事实核查 Agent 的 search 工具) / Supabase Postgres + Prisma (服务端读写, 取代 localStorage) / Vercel 部署。
+Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5 + Tailwind v4 / LLM: DeepSeek (openai SDK, OpenAI 兼容端点; 批处理与搜索 Agent 均 deepseek-v4-flash —— pro 是推理模型, 同步核查路径串行多轮会撞 Vercel 超时, 见下「单篇生成 504 修复」; 换模型/换 provider 见 lib/llm.ts + .env) / 搜索: Tavily (事实核查 Agent 的 search 工具) / Supabase Postgres + Prisma (服务端读写, 取代 localStorage) / Vercel 部署。
 
 ### Data schema
 
@@ -182,9 +182,10 @@ DevTools Network tab:
 ### 当前
 
 - 代码实现: Step 1-8 完成, v0 已上线
-- 最新 commit: `4a73393` (branch: main, 共 13 个 commit)
+- 最新 commit: `21b9a34` (branch: main, 共 25 个 commit)
 - 项目目录: `~/Desktop/finews-agent/`
-- 线上 URL: https://finews-agent.vercel.app/
+- 线上 URL: https://finews-agent.vercel.app/ (Vercel Hobby; push 到 main 自动部署, 无需手动操作)
+- 部署的是 Next.js web 产品 (含其自带的 TS 搜索/核查 agent, 见 lib/agent.ts); `agent/` 的 Python LangGraph 学习版未部署, 仅本地命令行
 - 开发环境: Claude Code (desktop app)
 
 ### 具体已完成
@@ -219,10 +220,11 @@ DevTools Network tab:
 - 期间修了概念 parser (方括号改可选, 兼容模型实际输出), 时间戳改 LocalTime 客户端组件避免 SSR 时区不一致。
 - 表: `articles` / `concepts` / `article_concepts` (多对多连接表); id + created_at 服务端生成。
 
-**部署待办 (留待以后单独做)**:
-- [ ] Vercel 配 `DATABASE_URL` + `DIRECT_URL` (Production + Preview)
-- [ ] 对生产库跑 `prisma migrate deploy`
-- [ ] 线上贴新闻验证持久化; DevTools 搜不到数据库串 / 密码
+**部署 (已上线, 2026-06-01 确认)**:
+- [x] Vercel 配 env 变量 (Production + Preview) — 共 6 个: `DATABASE_URL` / `DIRECT_URL` / `DEEPSEEK_API_KEY` / `TAVILY_API_KEY` / `DEEPSEEK_MODEL` / `DEEPSEEK_MODEL_AGENT`
+- [x] 生产库 schema 已就位 — 本地 `migrate dev` 直接对 Supabase 库跑过, 与生产同库, 无需另跑 `migrate deploy`
+- [x] 已自动部署并运行 — Deployments 连续 Ready / Production, 至少已活 2 天; 每次 push 到 main 自动重新部署
+- [x] 线上贴新闻端到端验证 — 2026-06-01 跑通: 单篇核查生成约 32s 返回 200 (此前一直 504, 见下「单篇生成 504 修复」)
 - [ ] 确认 LocalTime 消除时区 hydration 警告 (线上才显现)
 
 迁移风险备忘: `DATABASE_URL` 池串 (6543) 给应用、`DIRECT_URL` 直连 (5432) 给迁移, 两个都要配; `postinstall: prisma generate` 必须加 (否则 Vercel 构建失败); Supabase 免费项目闲置约一周会暂停, 首次访问要唤醒。
@@ -231,7 +233,8 @@ DevTools Network tab:
 
 手动触发抓取已跑通 (2026-05-31)。关键文件: `lib/rss.ts` (3 个源: 华尔街见闻 / 第一财经走 RSSHub 镜像, 人民网财经原生; rss-parser + HTML 转纯文本), `app/api/fetch-rss/route.ts` (POST: 抓取 → 批内 + 对库去重 → 逐条 generateArticle 入库, 批处理不开搜索省额度), `components/FetchRssButton.tsx` (触发按钮)。
 实测: 一次抓 6 条、去重后用 deepseek-v4-flash 串行生成入库, 零失败 (单条约几秒)。
-待做: 每天定时 push headline + Vercel Cron schedule; 部署后批处理串行耗时需注意函数超时 (改并发或换队列)。
+函数超时已处理 (2026-06-01): `app/api/fetch-rss/route.ts` 加 `export const maxDuration = 60` + 每批上限 `MAX_PER_RUN = 5` (单篇无搜索约 5-10s, 控制在 Vercel Hobby 60s 上限内), 超出条数留到下次触发, 返回 JSON 加 `deferred` 字段告知延后数。更大批量再考虑并发 / 队列。
+待做: 每天定时 push headline + Vercel Cron schedule。
 
 ### 下一步
 
@@ -239,7 +242,7 @@ v0 完成, v0.5 进行中 (RSS 抓取已落地; 邮件 push + 定时待做)。�
 下面 v1.5 / v2 / v2.5 / v3.5 已在 agent/ 学习版 (Python LangGraph, 本地跑) 实现, 产品未集成; 详见 agent/RESULTS.md。
 
 v0.5: RSSHub 自动拉 ✓; 待做 每天 push headline + schedule (Vercel Cron)
-v1:   存储迁 Postgres + Prisma (✓ 代码完成, 待部署); 加 user auth
+v1:   存储迁 Postgres + Prisma (✓ 已部署上线); user auth 暂不做 — 线上选择完全公开 (简历项目方便 HR 直接打开; 注意公网任何人可调用, 会耗 DeepSeek/Tavily 额度)
 v1.5: critic agent 自检 — 已在 agent/ 学习版实现 (reflection 生成-自检), 产品未集成
 v2:   LangGraph 编排 agent loop — 已在 agent/ 学习版实现 (本地, 非 Railway 微服务), 产品未集成
 v2.5: Agentic RAG — 已在 agent/ 学习版实现 (concept_lookup 检索自建概念库; 未上向量库), 产品未集成
@@ -267,9 +270,9 @@ v4:   Spaced repetition / quiz / adaptive curriculum
 
 已落地 (2026-05-31, 取代原 grounding 版): 单篇生成 (useSearch:true) 时, 把 search 当工具交给 DeepSeek, 模型在多轮循环里**自己决定要不要搜、搜什么、搜几次、何时停** (真 agent, 非代码写死的流水线)。两阶段: 检索阶段带 tools 自由调用, 收尾不带 tools 出干净 JSON; 搜索结果与原文一起喂模型, 用到的来源去重后 (上限 8 条) 落库展示。
 
-关键文件: `lib/agent.ts` (runSearchAgent, tool-calling 循环 + MAX_STEPS=4 上限), `lib/search.ts` (Tavily 客户端), `lib/prompts.ts` (buildAgentSystemPrompt / buildAgentFinalizePrompt), `lib/llm.ts` (generateArticle 的 opts.useSearch 派发), prisma Article.sources 列, `components/ArticleView.tsx` (来源区块), `app/api/generate-article/route.ts` (useSearch:true + maxDuration=45)。
+关键文件: `lib/agent.ts` (runSearchAgent, tool-calling 循环 + MAX_STEPS=2 + 时间预算/单次超时兜底), `lib/search.ts` (Tavily 客户端), `lib/prompts.ts` (buildAgentSystemPrompt / buildAgentFinalizePrompt), `lib/llm.ts` (generateArticle 的 opts.useSearch 派发), prisma Article.sources 列, `components/ArticleView.tsx` (来源区块), `app/api/generate-article/route.ts` (useSearch:true + maxDuration=60)。
 
-模型分配: 批处理 / 无搜索生成用 deepseek-v4-flash (快省), 搜索 Agent 用 deepseek-v4-pro (`DEEPSEEK_MODEL` / `DEEPSEEK_MODEL_AGENT` 覆盖)。注意 deepseek-chat 已下架, 用 deepseek-v4 系列。实测 (2026-05-31): flash 生成约 4s/条、pro 约 20s/条 → flash 快约 5×; 单价 flash $0.14/$0.28 vs pro 常规价 $1.74/$3.48 每百万 token(输入/输出, 来源 api-docs.deepseek.com)→ flash 便宜约 12×。故高频批处理放 flash、低频高质量核查放 pro。
+模型分配: 批处理 / 无搜索生成用 deepseek-v4-flash (快省), 搜索 Agent 用 deepseek-v4-pro (`DEEPSEEK_MODEL` / `DEEPSEEK_MODEL_AGENT` 覆盖)。注意 deepseek-chat 已下架, 用 deepseek-v4 系列。实测 (2026-05-31): flash 生成约 4s/条、pro 约 20s/条 → flash 快约 5×; 单价 flash $0.14/$0.28 vs pro 常规价 $1.74/$3.48 每百万 token(输入/输出, 来源 api-docs.deepseek.com)→ flash 便宜约 12×。故高频批处理放 flash。核查 Agent 原设计放 pro, 但它是同步 serverless 路径, pro 串行多轮 + 定稿会撞 60s 函数超时 (见下「单篇生成 504 修复」), 已统一改 flash; 要 pro 质量需把 agent 移出请求链路 (异步后台 + 轮询)。
 
 踩坑:
 - Tavily 中文检索必须用 `topic:'general'` + `country:'china'`; `topic:'news'` 实测对中文查询返回无关英文新闻 (news 源偏英文)。
@@ -287,5 +290,11 @@ v4:   Spaced repetition / quiz / adaptive curriculum
 - Agent 新风险: 会采信个别不准的第三方来源 (如"证监会"那条搜出"业务加分前 20 扩至前 30"的存疑说法) → 改进方向: 来源质量过滤 / 多源交叉。
 
 简历 result (数字待人工核验): "经开 / 关搜索对照测试, Agent 将解读的可溯源数据点从每篇 0 提升至约 5 个, 增强可信度"。
+
+### 单篇生成 504 修复 (2026-06-01)
+
+网页粘贴 → "生成解读" 线上一直 504 (Vercel `FUNCTION_INVOCATION_TIMEOUT`), 此前从未端到端验证过。根因: 核查 agent 路径用推理模型 deepseek-v4-pro 串行多轮 tool-calling + 定稿, 实测单次定稿约 23s, 整条轻松超过函数超时; 且 route `maxDuration` 仅 45 (低于 Hobby 60 上限)。本地 `next dev` 无超时, 所以只在线上暴露。
+
+改法 (commit `21b9a34`): agent 默认模型 pro → flash (实测定稿约 5.5s); MAX_STEPS 4 → 2; 加 50s 软预算 + 单次调用硬超时 + 检索失败降级直接定稿; route `maxDuration` 45 → 60; `.env.example` / `.env.local` / Vercel 的 `DEEPSEEK_MODEL_AGENT` 同改 flash (env 改完要 redeploy 才生效)。线上实测: 同篇新闻约 32s 返回 200, 文章页含机制 / 概念 / 来源。代价: flash 推理弱于 pro, 换取稳定跑进 60s。
 
 
