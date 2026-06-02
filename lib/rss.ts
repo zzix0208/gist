@@ -2,9 +2,9 @@ import 'server-only';
 import Parser from 'rss-parser';
 
 // 抓取层：唯一换源点就是下面的 FEEDS。换源 / 加源 = 改一行 URL，别处不动。
-// 前两个走第三方 RSSHub 镜像（比原生脆）；镜像挂了把 MIRROR 换成备用 host
-// （如 https://hub.slarker.me）即可。人民网是原生源，最稳，当兜底锚。
-const MIRROR = 'https://rsshub.rssforever.com';
+// 前两个走自建 RSSHub（部署在 Vercel，仅自己用，不跟公共镜像争抢，稳）；换实例只改 MIRROR。
+// 人民网是原生源，最稳，当兜底锚。
+const MIRROR = 'https://rsshub-virid-xi.vercel.app';
 
 const FEEDS: { url: string; source: string }[] = [
   { url: `${MIRROR}/wallstreetcn/news/global`, source: '华尔街见闻' },
@@ -31,9 +31,9 @@ type ParsedItem = {
 };
 
 const parser = new Parser({
-  // 单源超时上限。8s（原 15s）让卡住的镜像源更快放弃，配合 fetchLatest 的并行抓取，
-  // 坏源不再把整批拖到 15s；稳的人民网源远快于此，不受影响。
-  timeout: 8000,
+  // 单源超时上限。自建 RSSHub 首次冷启动约 11s（热约 5s），给 12s 等它醒来；
+  // 人民网原生源远快于此，不受影响。
+  timeout: 12000,
   headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) FinewsBot/0.1' },
   customFields: { item: [['content:encoded', 'contentEncoded']] },
 });
