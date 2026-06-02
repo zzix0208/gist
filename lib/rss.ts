@@ -2,14 +2,12 @@ import 'server-only';
 import Parser from 'rss-parser';
 
 // 抓取层：唯一换源点就是下面的 FEEDS。换源 / 加源 = 改一行 URL，别处不动。
-// 前两个走自建 RSSHub（部署在 Vercel，仅自己用，不跟公共镜像争抢，稳）；换实例只改 MIRROR。
-// 人民网是原生源，最稳，当兜底锚。
-const MIRROR = 'https://rsshub-virid-xi.vercel.app';
-
+// 三个都是原生 RSS，无需 RSSHub 中转（比镜像稳）：BBC 综合商业、CNBC 宏观经济、
+// CNBC 市场。三家/板块覆盖 综合 + 宏观 + 市场，喂给 LLM 做机制解读。
 const FEEDS: { url: string; source: string }[] = [
-  { url: `${MIRROR}/wallstreetcn/news/global`, source: '华尔街见闻' },
-  { url: `${MIRROR}/yicai/headline`, source: '第一财经' },
-  { url: 'http://www.people.com.cn/rss/finance.xml', source: '人民网财经' },
+  { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', source: 'BBC Business' },
+  { url: 'https://www.cnbc.com/id/20910258/device/rss/rss.html', source: 'CNBC Economy' },
+  { url: 'https://www.cnbc.com/id/15839135/device/rss/rss.html', source: 'CNBC Markets' },
 ];
 
 export type RssItem = {
@@ -31,8 +29,7 @@ type ParsedItem = {
 };
 
 const parser = new Parser({
-  // 单源超时上限。自建 RSSHub 首次冷启动约 11s（热约 5s），给 12s 等它醒来；
-  // 人民网原生源远快于此，不受影响。
+  // 单源超时上限。原生源（BBC / CNBC）通常 1-3s 返回；给 12s 容网络波动。
   timeout: 12000,
   headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) FinewsBot/0.1' },
   customFields: { item: [['content:encoded', 'contentEncoded']] },

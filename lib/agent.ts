@@ -54,13 +54,13 @@ export async function runSearchAgent(
       function: {
         name: 'search',
         description:
-          '联网检索. 用于核对原文里的数字/事实、补背景或查最新进展. 原文已足够时不必调用. 你自己决定搜几次、搜什么.',
+          'Web search. Use it to verify numbers / facts in the source, add background, or check the latest developments. No need to call it when the source is already sufficient. You decide how many times and what to search.',
         parameters: {
           type: 'object',
           properties: {
             query: {
               type: 'string',
-              description: '中文检索词, 尽量具体(带主体/时间/数字等关键词)',
+              description: 'Search query in English, as specific as possible (with entity / time / numbers as keywords)',
             },
           },
           required: ['query'],
@@ -71,7 +71,7 @@ export async function runSearchAgent(
 
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: 'system', content: buildAgentSystemPrompt() },
-    { role: 'user', content: `新闻标题: ${title}\n新闻原文/摘要: ${rawText}` },
+    { role: 'user', content: `Headline: ${title}\nArticle / summary: ${rawText}` },
   ];
 
   const sources: Source[] = [];
@@ -160,8 +160,8 @@ export async function runSearchAgent(
 
 // 把检索结果拼成喂回模型的文本(含正文摘要, 供模型判断与引用).
 function formatResults(results: SearchResult[]): string {
-  if (results.length === 0) return '没有检索到结果.';
+  if (results.length === 0) return 'No results found.';
   return results
-    .map((r, i) => `[${i + 1}] ${r.title}\n${r.content}\n来源: ${r.url}`)
+    .map((r, i) => `[${i + 1}] ${r.title}\n${r.content}\nSource: ${r.url}`)
     .join('\n\n');
 }

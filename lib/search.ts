@@ -23,10 +23,11 @@ export async function searchWeb(query: string, maxResults = 5): Promise<SearchRe
     },
     body: JSON.stringify({
       query,
-      // topic:'news' 实测对中文查询返回无关英文结果(Tavily 的 news 源偏英文);
-      // general + country:'china' 才稳定返回相关中文财经新闻。
-      topic: 'general',
-      country: 'china',
+      // English financial news: 'news' topic + US region returns relevant, recent
+      // results. (The old zh setup used general + country:'china' because Tavily's
+      // news source skews English and gave off-topic results for Chinese queries.)
+      topic: 'news',
+      country: 'united states',
       search_depth: 'basic',
       max_results: maxResults,
     }),

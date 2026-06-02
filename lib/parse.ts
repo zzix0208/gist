@@ -47,6 +47,6 @@ function pickLayer(raw: string): Layer {
   for (const l of LAYERS) {
     if (raw.includes(l)) return l;
   }
-  console.warn(`[parse] unknown layer "${raw.trim()}", defaulting to 技术`);
-  return '技术';
+  console.warn(`[parse] unknown layer "${raw.trim()}", defaulting to Technical`);
+  return 'Technical';
 }

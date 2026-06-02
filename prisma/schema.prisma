@@ -24,7 +24,7 @@ model Article {
   mechanism   String
   history     String
   uncertainty String
-  sources     Json? // 事实核查来源 [{title,url,query?}]; 无核查时 NULL
+  sources     Json? // fact-check sources [{title,url,query?}]; NULL when no check
 
   concepts ArticleConcept[]
 
@@ -34,7 +34,7 @@ model Article {
 
 model Concept {
   name       String   @id // natural key; the app identifies concepts by name
-  layer      String // 宏观 / 产业 / 微观 / 技术 (plain string for now)
+  layer      String // Macro / Industry / Micro / Technical (plain string for now)
   definition String
   firstSeen  DateTime @default(now()) @map("first_seen")
 

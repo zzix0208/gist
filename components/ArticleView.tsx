@@ -20,7 +20,7 @@ export default function ArticleView({ article }: { article: Article }) {
             rel="noopener noreferrer"
             className="text-xs text-link underline underline-offset-2 decoration-faint hover:decoration-foreground mt-1 inline-block"
           >
-            查看原文
+            View source
           </a>
         )}
       </header>
@@ -31,10 +31,10 @@ export default function ArticleView({ article }: { article: Article }) {
         </p>
       )}
 
-      <Section heading="机制" body={article.sections.mechanism} />
+      <Section heading="Mechanism" body={article.sections.mechanism} />
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">概念</h2>
+        <h2 className="text-lg font-semibold mb-3">Concepts</h2>
         <div className="flex flex-wrap gap-2.5">
           {article.concepts.map((c) => (
             <Link
@@ -51,7 +51,7 @@ export default function ArticleView({ article }: { article: Article }) {
 
       {article.sources && article.sources.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold mb-3">核查来源</h2>
+          <h2 className="text-base font-semibold mb-3">Sources checked</h2>
           <ul className="flex flex-col gap-1">
             {article.sources.map((s) => (
               <li key={s.url} className="text-xs leading-6">
@@ -70,7 +70,7 @@ export default function ArticleView({ article }: { article: Article }) {
       )}
 
       <Section
-        heading="不确定性"
+        heading="Uncertainty"
         body={article.sections.uncertainty}
         headingClass="text-base font-semibold"
         bodyClass="text-xs leading-6 text-muted"

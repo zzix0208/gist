@@ -19,7 +19,7 @@ export default async function ConceptDetailPage({
       <main className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
         <p className="text-muted">Concept not found.</p>
         <Link href="/concepts" className="text-sm text-link underline underline-offset-2 decoration-faint hover:decoration-foreground">
-          回概念库
+          Back to concepts
         </Link>
       </main>
     );
@@ -35,21 +35,21 @@ export default async function ConceptDetailPage({
           <h1 className="text-[28px] leading-tight tracking-tight font-semibold">{concept.name}</h1>
         </div>
         <p className="text-xs text-faint mt-1">
-          首次出现 <LocalTime iso={concept.firstSeen} />
+          First seen <LocalTime iso={concept.firstSeen} />
         </p>
       </header>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">定义</h2>
+        <h2 className="text-lg font-semibold mb-3">Definition</h2>
         <p className="text-[15px] leading-7">{concept.definition}</p>
       </section>
 
       <section>
         <h2 className="text-lg font-semibold mb-3">
-          出现过的新闻 ({appearances.length})
+          Appears in ({appearances.length})
         </h2>
         {appearances.length === 0 ? (
-          <p className="text-sm text-muted">关联的文章已被清除.</p>
+          <p className="text-sm text-muted">Linked articles have been cleared.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {appearances.map((a) => (

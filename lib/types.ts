@@ -1,6 +1,6 @@
-export type Layer = '宏观' | '产业' | '微观' | '技术';
+export type Layer = 'Macro' | 'Industry' | 'Micro' | 'Technical';
 
-export const LAYERS: readonly Layer[] = ['宏观', '产业', '微观', '技术'];
+export const LAYERS: readonly Layer[] = ['Macro', 'Industry', 'Micro', 'Technical'];
 
 export type Article = {
   id: string;
