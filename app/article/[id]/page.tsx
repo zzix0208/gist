@@ -15,9 +15,9 @@ export default async function ArticlePage({
 
   if (!article) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-zinc-600 dark:text-zinc-400">Article not found.</p>
-        <Link href="/" className="text-sm text-blue-600 hover:underline">
+      <main className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <p className="text-muted">Article not found.</p>
+        <Link href="/" className="text-sm text-link underline underline-offset-2 decoration-faint hover:decoration-foreground">
           回首页
         </Link>
       </main>

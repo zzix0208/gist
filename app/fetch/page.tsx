@@ -18,36 +18,36 @@ export default async function FetchPage() {
   const articles = await listArticles(20);
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-8 flex flex-col gap-6">
+    <main className="max-w-2xl mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-16 flex flex-col gap-8">
       <header>
-        <h1 className="text-2xl font-semibold">抓取新闻</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+        <h1 className="text-[28px] leading-tight tracking-tight font-semibold">抓取新闻</h1>
+        <p className="text-sm text-muted mt-1">
           从 RSS 源抓一批财经新闻，自动生成解读
         </p>
       </header>
 
       <FetchRssButton />
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-zinc-500">最新文章</h2>
+      <section className="flex flex-col gap-4">
+        <h2 className="text-sm font-semibold text-muted">最新文章</h2>
         {articles.length === 0 ? (
-          <p className="text-sm text-zinc-500">还没有文章，点上面的按钮抓一批。</p>
+          <p className="text-sm text-muted">还没有文章，点上面的按钮抓一批。</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
+          <ul className="flex flex-col divide-y divide-border-default">
             {articles.map((a) => (
-              <li key={a.id} className="py-3">
+              <li key={a.id} className="py-4 -mx-3 px-3 rounded-md hover:bg-surface-hover transition-colors">
                 <Link
                   href={`/article/${a.id}`}
-                  className="text-base font-medium hover:underline"
+                  className="text-base font-medium hover:underline underline-offset-2"
                 >
                   {a.title}
                 </Link>
                 {a.summary && (
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1 line-clamp-2">
+                  <p className="text-sm text-muted mt-1 line-clamp-2">
                     {a.summary}
                   </p>
                 )}
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-faint mt-1">
                   {a.source_url && <span className="mr-2">{hostOf(a.source_url)}</span>}
                   <LocalTime iso={a.created_at} />
                 </p>

@@ -36,17 +36,17 @@ export default function FetchRssButton() {
       <button
         onClick={handleFetch}
         disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 self-start"
+        className="bg-accent text-accent-foreground px-4 py-2.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:opacity-80 self-start"
       >
         {loading ? '抓取中...' : '抓取新闻'}
       </button>
       {result && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           抓取 {result.fetched}，新增 {result.created}，跳过 {result.skipped}
           {result.failed > 0 ? `，失败 ${result.failed}` : ''}
         </p>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

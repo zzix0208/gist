@@ -16,9 +16,9 @@ export default async function ConceptDetailPage({
 
   if (!concept) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-zinc-600 dark:text-zinc-400">Concept not found.</p>
-        <Link href="/concepts" className="text-sm text-blue-600 hover:underline">
+      <main className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <p className="text-muted">Concept not found.</p>
+        <Link href="/concepts" className="text-sm text-link underline underline-offset-2 decoration-faint hover:decoration-foreground">
           回概念库
         </Link>
       </main>
@@ -28,39 +28,39 @@ export default async function ConceptDetailPage({
   const { appearances } = concept;
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
+    <main className="max-w-2xl mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-16 flex flex-col gap-8">
       <header>
         <div className="flex items-baseline gap-2">
-          <span className="text-zinc-500 text-xs">{concept.layer}</span>
-          <h1 className="text-2xl font-semibold">{concept.name}</h1>
+          <span className="text-faint text-xs">{concept.layer}</span>
+          <h1 className="text-[28px] leading-tight tracking-tight font-semibold">{concept.name}</h1>
         </div>
-        <p className="text-xs text-zinc-500 mt-1">
+        <p className="text-xs text-faint mt-1">
           首次出现 <LocalTime iso={concept.firstSeen} />
         </p>
       </header>
 
       <section>
-        <h2 className="text-lg font-semibold mb-2">定义</h2>
-        <p className="text-sm leading-7">{concept.definition}</p>
+        <h2 className="text-lg font-semibold mb-3">定义</h2>
+        <p className="text-[15px] leading-7">{concept.definition}</p>
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-2">
+        <h2 className="text-lg font-semibold mb-3">
           出现过的新闻 ({appearances.length})
         </h2>
         {appearances.length === 0 ? (
-          <p className="text-sm text-zinc-500">关联的文章已被清除.</p>
+          <p className="text-sm text-muted">关联的文章已被清除.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {appearances.map((a) => (
               <li key={a.id} className="flex items-baseline gap-2">
                 <Link
                   href={`/article/${a.id}`}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-link underline underline-offset-2 decoration-faint hover:decoration-foreground"
                 >
                   {a.title}
                 </Link>
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs text-faint">
                   <LocalTime iso={a.createdAt} />
                 </span>
               </li>

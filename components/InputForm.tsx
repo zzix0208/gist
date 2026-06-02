@@ -42,7 +42,7 @@ export default function InputForm() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="新闻标题"
-        className="border rounded px-3 py-2"
+        className="border border-border-strong rounded-md px-3 py-2.5 bg-paper transition-colors placeholder:text-faint focus:border-foreground"
         disabled={submitting}
       />
       <textarea
@@ -50,17 +50,17 @@ export default function InputForm() {
         onChange={(e) => setRawText(e.target.value)}
         placeholder="粘贴新闻原文 / 摘要"
         rows={10}
-        className="border rounded px-3 py-2 font-mono text-sm"
+        className="border border-border-strong rounded-md px-3 py-2.5 font-mono text-sm bg-paper transition-colors placeholder:text-faint focus:border-foreground"
         disabled={submitting}
       />
       <button
         type="submit"
         disabled={!canSubmit}
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="bg-accent text-accent-foreground px-4 py-2.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:opacity-80"
       >
         {submitting ? '生成中...' : '生成解读'}
       </button>
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
     </form>
   );
 }

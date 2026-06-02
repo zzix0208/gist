@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 中性灰阶(Notion 风,暖灰偏一点) */
+  --paper: #ffffff; /* 主背景,纸白 */
+  --paper-subtle: #f7f7f5; /* 次级背景 / hover 面 */
+  --ink: #37352f; /* 正文近黑(Notion 经典) */
+  --ink-strong: #1d1b16; /* 标题 / 强调,更黑 */
+  --ink-muted: #787066; /* 次要文字 */
+  --ink-faint: #9b948a; /* 最弱:时间戳 / 计数 */
+  --line: #ebeae8; /* 默认边框 / 分割线 */
+  --line-strong: #dcdad6; /* 输入框 / 按钮边框 */
+
+  /* 语义别名 */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --muted: var(--ink-muted);
+  --faint: var(--ink-faint);
+  --border-default: var(--line);
+  --border-strong: var(--line-strong);
+  --surface-hover: var(--paper-subtle);
+
+  /* 交互(去蓝):CTA = 近黑实心;link = 近黑 + 下划线 */
+  --accent: var(--ink-strong);
+  --accent-foreground: #ffffff;
+  --link: var(--ink-strong);
+
+  /* 唯一保留的语义色:克制的暗酒红错误色 */
+  --danger: #9a3b3b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-paper: var(--paper);
+  --color-paper-subtle: var(--paper-subtle);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-surface-hover: var(--surface-hover);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-link: var(--link);
+  --color-danger: var(--danger);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* 全站衬线:中文宋体 + 拉丁衬线,本地宋体兜底 */
+  --font-serif: var(--font-serif-latin), var(--font-serif-sc), ui-serif, Georgia,
+    "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  --font-sans: var(--font-serif);
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
+  font-family: var(--font-serif);
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  /* 颜色 / 背景 / 边框过渡统一,不动 layout 属性 */
+  a,
+  button {
+    transition-property: color, background-color, border-color,
+      text-decoration-color, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease;
+  }
+
+  /* 键盘 focus:Notion 风细灰环,非浏览器默认蓝光晕 */
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--foreground) 30%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* 标题换行更均衡,正文避免孤字 */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
 }
