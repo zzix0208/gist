@@ -2,12 +2,12 @@ import 'server-only';
 import Parser from 'rss-parser';
 
 // 抓取层：唯一换源点就是下面的 FEEDS。换源 / 加源 = 改一行 URL，别处不动。
-// 三个都是原生 RSS，无需 RSSHub 中转（比镜像稳）：BBC 综合商业、CNBC 宏观经济、
-// CNBC 市场。三家/板块覆盖 综合 + 宏观 + 市场，喂给 LLM 做机制解读。
+// 三个 CNBC 板块原生 RSS（无需 RSSHub 中转，比镜像稳）：宏观经济、市场、金融，
+// 全财经硬核，覆盖 宏观 + 市场 + 金融机构，喂给 LLM 做机制解读。
 const FEEDS: { url: string; source: string }[] = [
-  { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', source: 'BBC Business' },
   { url: 'https://www.cnbc.com/id/20910258/device/rss/rss.html', source: 'CNBC Economy' },
   { url: 'https://www.cnbc.com/id/15839135/device/rss/rss.html', source: 'CNBC Markets' },
+  { url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html', source: 'CNBC Finance' },
 ];
 
 export type RssItem = {
