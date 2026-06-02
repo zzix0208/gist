@@ -31,7 +31,9 @@ type ParsedItem = {
 };
 
 const parser = new Parser({
-  timeout: 15000,
+  // 单源超时上限。8s（原 15s）让卡住的镜像源更快放弃，配合 fetchLatest 的并行抓取，
+  // 坏源不再把整批拖到 15s；稳的人民网源远快于此，不受影响。
+  timeout: 8000,
   headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) FinewsBot/0.1' },
   customFields: { item: [['content:encoded', 'contentEncoded']] },
 });
@@ -57,18 +59,19 @@ function pickText(it: ParsedItem): string {
   return (it.contentSnippet || '').trim(); // 正文太短时退回纯文本摘要
 }
 
-// 每源取最新 perFeed 条并归一化。单源失败只跳过该源，不炸整批。
+// 每源取最新 perFeed 条并归一化。三源并行抓取(allSettled），单源失败只跳过该源、
+// 不炸整批；输出按 FEEDS 顺序拼接，与原串行顺序一致。
 export async function fetchLatest(perFeed = 2): Promise<RssItem[]> {
-  const out: RssItem[] = [];
-  for (const feed of FEEDS) {
-    try {
+  const settled = await Promise.allSettled(
+    FEEDS.map(async (feed): Promise<RssItem[]> => {
       const parsed = await parser.parseURL(feed.url);
+      const items: RssItem[] = [];
       for (const it of (parsed.items ?? []).slice(0, perFeed) as ParsedItem[]) {
         const title = (it.title ?? '').trim();
         const url = (it.link ?? '').trim();
         const text = pickText(it);
         if (!title || !url || !text) continue;
-        out.push({
+        items.push({
           title,
           url,
           text,
@@ -76,12 +79,21 @@ export async function fetchLatest(perFeed = 2): Promise<RssItem[]> {
           source: feed.source,
         });
       }
-    } catch (err) {
-      console.warn(
-        `[rss] feed failed, skipped: ${feed.source} ${feed.url} —`,
-        err instanceof Error ? err.message : err,
-      );
+      return items;
+    }),
+  );
+
+  const out: RssItem[] = [];
+  settled.forEach((res, i) => {
+    if (res.status === 'fulfilled') {
+      out.push(...res.value);
+      return;
     }
-  }
+    const feed = FEEDS[i];
+    console.warn(
+      `[rss] feed failed, skipped: ${feed.source} ${feed.url} —`,
+      res.reason instanceof Error ? res.reason.message : res.reason,
+    );
+  });
   return out;
 }

@@ -31,11 +31,10 @@ export async function POST() {
   // 控制单次处理量，避免串行生成超过函数时间上限；超出的留到下次触发。
   const batch = fresh.slice(0, MAX_PER_RUN);
 
-  let created = 0;
-  let failed = 0;
-  // 串行：单条失败只跳过该条，不中断整批。
-  for (const it of batch) {
-    try {
+  // 并行生成整批（allSettled）：单条失败只跳过该条、不中断整批；并发写库安全
+  // （createArticleWithConcepts 内 concept.createMany skipDuplicates → ON CONFLICT DO NOTHING）。
+  const settled = await Promise.allSettled(
+    batch.map(async (it) => {
       // RSS 批处理不开搜索（避免串行 × 多轮检索拖慢、耗额度）。
       const { result } = await generateArticle(it.title, it.text);
       await createArticleWithConcepts({
@@ -49,12 +48,20 @@ export async function POST() {
         },
         concepts: result.concepts,
       });
+    }),
+  );
+
+  let created = 0;
+  let failed = 0;
+  settled.forEach((res, i) => {
+    if (res.status === 'fulfilled') {
       created += 1;
-    } catch (err) {
-      failed += 1;
-      console.error(`[fetch-rss] item failed, skipped: ${it.source} "${it.title}"`, err);
+      return;
     }
-  }
+    failed += 1;
+    const it = batch[i];
+    console.error(`[fetch-rss] item failed, skipped: ${it.source} "${it.title}"`, res.reason);
+  });
 
   return NextResponse.json({
     fetched: items.length,

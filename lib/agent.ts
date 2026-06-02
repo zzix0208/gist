@@ -19,10 +19,10 @@ import type { GenerateArticleResult, Source } from './types';
 // 这条链路是同步的、卡在 serverless 函数超时里(见 generate-article route 的
 // maxDuration). 三件事保证它跑得进 60s 上限:
 //   - 默认走 flash(实测定稿 ~5.5s, 而 pro ~23s);
-//   - MAX_STEPS=2 + 整体时间预算 DEADLINE_MS, 到点强制停止检索去定稿;
+//   - MAX_STEPS=1 + 整体时间预算 DEADLINE_MS, 到点强制停止检索去定稿;
 //   - 每次模型调用都带硬超时, 且检索失败不致命(降级为直接定稿).
 
-const MAX_STEPS = 2; // 最多几轮工具调用, 防模型空转烧额度 + 控制总耗时
+const MAX_STEPS = 1; // 最多几轮工具调用; 1 轮(决策→搜→定稿)对财经速读已够, 提速 + 防空转
 const MAX_SOURCES = 8; // 入库/展示的来源上限, 避免文章页来源列表过长
 
 // 时间预算: 函数 maxDuration=60s, 留 ~10s 余量(网络 + 入库)给 DEADLINE 之外.
@@ -40,11 +40,11 @@ export async function runSearchAgent(
   // 默认 flash: pro 是推理模型, 每次调用都慢(实测定稿 ~23s), 串行多轮会撞函数超时.
   const model =
     modelOverride ?? process.env.DEEPSEEK_MODEL_AGENT ?? process.env.DEEPSEEK_MODEL ?? 'deepseek-v4-flash';
-  // maxRetries:1 — 单次超时后默认会重试 2 次, 在卡超时的同步路径里会把预算翻倍.
+  // maxRetries:0 — 卡超时的同步路径里, 默认重试会把时间预算翻倍(最坏 30s→60s), 关掉.
   const client = new OpenAI({
     apiKey: key,
     baseURL: process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com',
-    maxRetries: 1,
+    maxRetries: 0,
   });
   const start = Date.now();
 
