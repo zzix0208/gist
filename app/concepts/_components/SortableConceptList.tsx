@@ -22,11 +22,11 @@ export default function SortableConceptList({
   return (
     <main className="max-w-2xl mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-        <h1 className="text-[28px] leading-tight tracking-tight font-semibold">Concepts</h1>
+        <h1 className="text-[28px] leading-tight tracking-tight font-semibold">概念库</h1>
         <div className="flex gap-2 text-xs">
-          <SortBtn current={sort} value="time" setSort={setSort} label="Recent" />
-          <SortBtn current={sort} value="count" setSort={setSort} label="Count" />
-          <SortBtn current={sort} value="alpha" setSort={setSort} label="A-Z" />
+          <SortBtn current={sort} value="time" setSort={setSort} label="时间" />
+          <SortBtn current={sort} value="count" setSort={setSort} label="频次" />
+          <SortBtn current={sort} value="alpha" setSort={setSort} label="字母" />
         </div>
       </header>
 
@@ -40,7 +40,7 @@ export default function SortableConceptList({
               <span className="text-faint text-xs">{c.layer}</span>
               <span className="text-sm">{c.name}</span>
               <span className="text-xs text-faint ml-auto">
-                {c.appearanceCount}×
+                出现 {c.appearanceCount} 次
               </span>
             </Link>
           </li>

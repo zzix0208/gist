@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 // 单篇生成约 15-20s（联网核查 + 定稿）。提交后用骨架 + 阶段文案占位，替代长时白屏。
 // 文案按 agent 真实节奏定时切换，是近似进度（单请求拿不到内部进度，本档不上 SSE）。
-const PHASES = ['Checking sources…', 'Mapping mechanisms and concepts…', 'Almost done…'];
+const PHASES = ['联网核查原文…', '梳理机制与概念…', '即将完成…'];
 
 export default function InputForm() {
   const router = useRouter();
@@ -60,14 +60,14 @@ export default function InputForm() {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Headline"
+          placeholder="新闻标题"
           className="border border-border-strong rounded-md px-3 py-2.5 bg-paper transition-colors placeholder:text-faint focus:border-foreground"
           disabled={submitting}
         />
         <textarea
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}
-          placeholder="Paste the article or summary"
+          placeholder="粘贴新闻原文 / 摘要"
           rows={10}
           className="border border-border-strong rounded-md px-3 py-2.5 font-mono text-sm bg-paper transition-colors placeholder:text-faint focus:border-foreground"
           disabled={submitting}
@@ -77,7 +77,7 @@ export default function InputForm() {
           disabled={!canSubmit}
           className="bg-accent text-accent-foreground px-4 py-2.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:opacity-80"
         >
-          {submitting ? 'Generating…' : 'Generate'}
+          {submitting ? '生成中…' : '生成解读'}
         </button>
         {error && <p className="text-danger text-sm">{error}</p>}
       </form>

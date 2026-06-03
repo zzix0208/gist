@@ -11,9 +11,9 @@ export default async function ConceptsPage() {
   if (concepts.length === 0) {
     return (
       <main className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-        <p className="text-muted">No concepts yet.</p>
+        <p className="text-muted">还没有概念.</p>
         <Link href="/" className="text-sm text-link underline underline-offset-2 decoration-faint hover:decoration-foreground">
-          Paste a news story on the home page to try
+          去首页粘一条新闻试试
         </Link>
       </main>
     );

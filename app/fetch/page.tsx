@@ -20,18 +20,18 @@ export default async function FetchPage() {
   return (
     <main className="max-w-2xl mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-16 flex flex-col gap-8">
       <header>
-        <h1 className="text-[28px] leading-tight tracking-tight font-semibold">Fetch News</h1>
+        <h1 className="text-[28px] leading-tight tracking-tight font-semibold">抓取新闻</h1>
         <p className="text-sm text-muted mt-1">
-          Pull a batch of financial news from RSS feeds and auto-generate interpretations
+          从 RSS 源抓一批财经新闻，自动生成解读
         </p>
       </header>
 
       <FetchRssButton />
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold text-muted">Latest articles</h2>
+        <h2 className="text-sm font-semibold text-muted">最新文章</h2>
         {articles.length === 0 ? (
-          <p className="text-sm text-muted">No articles yet. Click the button above to fetch a batch.</p>
+          <p className="text-sm text-muted">还没有文章，点上面的按钮抓一批。</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border-default">
             {articles.map((a) => (

@@ -7,7 +7,7 @@ type Result = { fetched: number; skipped: number; created: number; failed: numbe
 
 // 抓取（并行三源 ~10s）+ 并行生成整批（~10s），合计约 20s。抓取期间用阶段文案 +
 // 占位条替代白屏。文案按真实节奏定时切换（单请求拿不到内部进度）。
-const PHASES = ['Fetching feeds…', 'Generating interpretations…'];
+const PHASES = ['正在抓取新闻源…', '正在生成解读…'];
 
 export default function FetchRssButton() {
   const router = useRouter();
@@ -52,7 +52,7 @@ export default function FetchRssButton() {
         disabled={loading}
         className="bg-accent text-accent-foreground px-4 py-2.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:opacity-80 self-start"
       >
-        {loading ? 'Fetching…' : 'Fetch news'}
+        {loading ? '抓取中…' : '抓取新闻'}
       </button>
 
       {loading && (
@@ -69,8 +69,8 @@ export default function FetchRssButton() {
 
       {result && (
         <p className="text-sm text-muted">
-          Fetched {result.fetched}, added {result.created}, skipped {result.skipped}
-          {result.failed > 0 ? `, failed ${result.failed}` : ''}
+          抓取 {result.fetched}，新增 {result.created}，跳过 {result.skipped}
+          {result.failed > 0 ? `，失败 ${result.failed}` : ''}
         </p>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}

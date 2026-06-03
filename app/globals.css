@@ -44,8 +44,9 @@
   --color-link: var(--link);
   --color-danger: var(--danger);
 
-  /* 全站衬线:拉丁衬线 Source Serif 4,Georgia / 系统衬线兜底 */
-  --font-serif: var(--font-serif-latin), ui-serif, Georgia, "Times New Roman", serif;
+  /* 全站衬线:中文宋体 + 拉丁衬线,本地宋体兜底 */
+  --font-serif: var(--font-serif-latin), var(--font-serif-sc), ui-serif, Georgia,
+    "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
   --font-sans: var(--font-serif);
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
