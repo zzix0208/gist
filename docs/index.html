@@ -1,29 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finews — Financial News, Decoded</title>
-  <meta name="description" content="An AI agent that turns daily financial news into mechanism-level explanations and a growing concept library." />
+  <title>财经新闻学习 Agent — Demo</title>
+  <meta name="description" content="一个把每天的财经新闻拆成机制和概念的 AI agent。理解机制,积累概念。" />
 
-  <!-- Social preview (shows a card when the link is shared) -->
+  <!-- 社交预览(链接被分享时显示卡片)-->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Finews — Financial News, Decoded" />
-  <meta property="og:description" content="An AI agent that decodes daily financial news into mechanisms and concepts." />
+  <meta property="og:title" content="财经新闻学习 Agent" />
+  <meta property="og:description" content="理解机制,积累概念 —— 一个把财经新闻拆成机制和概念的 AI agent。" />
   <meta property="og:url" content="https://zzix0208.github.io/finews-agent/" />
   <meta property="og:image" content="https://zzix0208.github.io/finews-agent/demo-poster.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Finews — Financial News, Decoded" />
-  <meta name="twitter:description" content="An AI agent that decodes daily financial news into mechanisms and concepts." />
+  <meta name="twitter:title" content="财经新闻学习 Agent" />
+  <meta name="twitter:description" content="理解机制,积累概念 —— 一个把财经新闻拆成机制和概念的 AI agent。" />
   <meta name="twitter:image" content="https://zzix0208.github.io/finews-agent/demo-poster.jpg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400..700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400..700&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      /* Notion-style neutral scale, ported from the app's globals.css */
+      /* Notion 风中性灰阶,移植自 app 的 globals.css */
       --paper: #ffffff;
       --paper-subtle: #f7f7f5;
       --ink: #37352f;
@@ -44,8 +44,9 @@
       margin: 0;
       background: var(--paper);
       color: var(--ink);
-      font-family: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
-      line-height: 1.6;
+      /* 拉丁字形用 Source Serif 4,汉字回落到 Noto Serif SC 宋体(与 app 一致) */
+      font-family: "Source Serif 4", "Noto Serif SC", ui-serif, Georgia, "Times New Roman", serif;
+      line-height: 1.7;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -76,22 +77,21 @@
       margin: 0 0 18px;
       font-size: 12px;
       letter-spacing: .14em;
-      text-transform: uppercase;
       color: var(--ink-faint);
     }
 
     h1 {
       margin: 0;
       font-size: 44px;
-      line-height: 1.1;
+      line-height: 1.2;
       letter-spacing: -0.01em;
       font-weight: 600;
       color: var(--ink-strong);
     }
 
     .lead {
-      margin: 20px 0 0;
-      font-size: 20px;
+      margin: 22px 0 0;
+      font-size: 19px;
       color: var(--ink-muted);
     }
 
@@ -106,7 +106,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 11px 20px;
+      padding: 11px 22px;
       border-radius: 8px;
       font-size: 16px;
       font-family: inherit;
@@ -128,7 +128,7 @@
     }
     .btn-secondary:hover { background: var(--paper-subtle); }
 
-    /* ---- Video ---- */
+    /* ---- 视频 ---- */
     .video-frame {
       margin: 56px 0;
       border: 1px solid var(--line);
@@ -143,14 +143,13 @@
       height: auto;
     }
 
-    /* ---- Sections ---- */
+    /* ---- 区块 ---- */
     section { margin-top: 56px; }
 
     .section-label {
       margin: 0 0 14px;
       font-size: 13px;
       letter-spacing: .08em;
-      text-transform: uppercase;
       color: var(--ink-faint);
     }
 
@@ -161,7 +160,7 @@
     }
     .prose strong { color: var(--ink-strong); }
 
-    /* ---- How it works ---- */
+    /* ---- 怎么运作 ---- */
     .steps {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -188,15 +187,16 @@
       margin: 0;
       font-size: 15px;
       color: var(--ink-muted);
+      line-height: 1.65;
     }
 
-    /* ---- Tech ---- */
+    /* ---- 技术栈 ---- */
     .tech {
       font-size: 15px;
       color: var(--ink-muted);
     }
 
-    /* ---- Footer ---- */
+    /* ---- 页脚 ---- */
     footer {
       margin-top: 72px;
       padding-top: 24px;
@@ -213,11 +213,11 @@
     footer a:hover { text-decoration-color: var(--ink-muted); }
     .dot { margin: 0 8px; color: var(--line-strong); }
 
-    /* ---- Responsive ---- */
+    /* ---- 响应式 ---- */
     @media (max-width: 640px) {
       .wrap { padding: 48px 20px 72px; }
-      h1 { font-size: 34px; }
-      .lead { font-size: 18px; }
+      h1 { font-size: 32px; }
+      .lead { font-size: 17px; }
       .video-frame { margin: 40px 0; }
       .steps { grid-template-columns: 1fr; }
     }
@@ -228,84 +228,77 @@
 
     <!-- Hero -->
     <header>
-      <p class="eyebrow">AI Agent · Financial News</p>
-      <h1>Financial News, Decoded</h1>
+      <p class="eyebrow">AI Agent · 财经新闻</p>
+      <h1>财经新闻,拆解给你看</h1>
       <p class="lead">
-        An AI agent that turns daily financial news into mechanism-level
-        explanations and a growing concept library — so you learn how markets
-        work, not just what happened.
+        一个 AI agent,把每天的财经新闻拆成机制级的解读,沉淀成一个不断生长的概念库——理解机制,而不只是知道发生了什么。
       </p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="https://finews-agent.vercel.app" target="_blank" rel="noopener">Try it live →</a>
-        <a class="btn btn-secondary" href="https://github.com/zzix0208/finews-agent" target="_blank" rel="noopener">View code →</a>
+        <a class="btn btn-primary" href="https://finews-agent.vercel.app" target="_blank" rel="noopener">在线体验 →</a>
+        <a class="btn btn-secondary" href="https://github.com/zzix0208/finews-agent" target="_blank" rel="noopener">查看代码 →</a>
       </div>
     </header>
 
-    <!-- Demo video -->
+    <!-- 视频 -->
     <div class="video-frame">
       <video controls preload="metadata" playsinline poster="./demo-poster.jpg">
         <source src="./demo.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
+        你的浏览器不支持播放视频。
       </video>
     </div>
 
-    <!-- The problem -->
+    <!-- 问题 -->
     <section>
-      <p class="section-label">The problem</p>
+      <p class="section-label">问题</p>
       <p class="prose">
-        Financial headlines tell you <strong>what</strong> moved. They rarely
-        explain <strong>why</strong> — and almost never connect today's story to
-        the concept underneath it. Finews reads the news for you and rebuilds the
-        mechanism, so each story leaves you with a concept you keep.
+        财经新闻只告诉你<strong>什么</strong>在动,很少讲<strong>为什么</strong>,更不会把今天这条新闻和它背后的概念连起来。Finews 替你读新闻、重建机制,让每条新闻最后都给你留下一个能积累的概念。
       </p>
     </section>
 
-    <!-- How it works -->
+    <!-- 怎么运作 -->
     <section>
-      <p class="section-label">How it works</p>
+      <p class="section-label">怎么运作</p>
       <div class="steps">
         <div class="step">
           <div class="num">01</div>
-          <h3>Fetch</h3>
-          <p>Pulls fresh stories from financial RSS feeds (CNBC and more).</p>
+          <h3>抓取</h3>
+          <p>从财经 RSS 源(CNBC 等)抓取最新新闻。</p>
         </div>
         <div class="step">
           <div class="num">02</div>
-          <h3>Decode</h3>
-          <p>An LLM agent breaks each story into a plain-English mechanism, what's still uncertain, and the concepts underneath.</p>
+          <h3>拆解</h3>
+          <p>一个 LLM agent 把每条新闻拆成大白话的机制、还不确定的地方,以及背后的概念。</p>
         </div>
         <div class="step">
           <div class="num">03</div>
-          <h3>Build</h3>
-          <p>Concepts accumulate into a personal library you can browse and revisit.</p>
+          <h3>积累</h3>
+          <p>概念不断沉淀成一个可以浏览、回看的个人概念库。</p>
         </div>
       </div>
     </section>
 
-    <!-- What I built — EDIT THIS to your own framing -->
+    <!-- 我做了什么 —— 这段可自行替换成你的措辞 -->
     <section>
-      <p class="section-label">What I built</p>
+      <p class="section-label">我做了什么</p>
       <p class="prose">
-        I scoped this product around concept-building over headline-chasing,
-        designed the agent pipeline (RSS → LLM decode → concept extraction), and
-        shipped the full app end-to-end on Next.js, Vercel, and Supabase.
+        我把产品定位在"积累概念"而非"追热点",设计了 agent 的处理链路(RSS → LLM 拆解 → 概念抽取),并把整个应用从 0 端到端做到上线(Next.js、Vercel、Supabase)。还针对生成等待做了体验优化:并行抓取与生成、精简 agent 轮次,提交后用骨架屏 + 分阶段状态提示替代长时白屏。
       </p>
     </section>
 
-    <!-- Tech -->
+    <!-- 技术栈 -->
     <section>
-      <p class="section-label">Built with</p>
+      <p class="section-label">技术栈</p>
       <p class="tech">
-        Next.js 16 · React 19 · Tailwind 4 · Prisma + Postgres (Supabase) · OpenAI-compatible LLM (DeepSeek)
+        Next.js 16 · React 19 · Tailwind 4 · Prisma + Postgres(Supabase) · OpenAI 兼容接口(DeepSeek)
       </p>
     </section>
 
     <footer>
-      Built by Xinyi
+      由 Xinyi 制作
       <span class="dot">·</span>
       <a href="https://github.com/zzix0208/finews-agent" target="_blank" rel="noopener">GitHub</a>
       <span class="dot">·</span>
-      <a href="https://finews-agent.vercel.app" target="_blank" rel="noopener">Live app</a>
+      <a href="https://finews-agent.vercel.app" target="_blank" rel="noopener">在线体验</a>
     </footer>
 
   </main>
