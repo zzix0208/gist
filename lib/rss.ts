@@ -61,7 +61,7 @@ function pickText(it: ParsedItem): string {
 
 // 每源取最新 perFeed 条并归一化。三源并行抓取(allSettled），单源失败只跳过该源、
 // 不炸整批；输出按 FEEDS 顺序拼接，与原串行顺序一致。
-export async function fetchLatest(perFeed = 2): Promise<RssItem[]> {
+export async function fetchLatest(perFeed = 6): Promise<RssItem[]> {
   const settled = await Promise.allSettled(
     FEEDS.map(async (feed): Promise<RssItem[]> => {
       const parsed = await parser.parseURL(feed.url);

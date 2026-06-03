@@ -18,11 +18,18 @@ export async function POST() {
     return [];
   });
 
-  // 批内按 url 去重 + 对库去重（已抓过的不重复生成）
-  const seen = new Set<string>();
+  // 批内去重：按 url + 标准化标题。同一条新闻常出现在多个源、url 不同，
+  // 靠标题（去空白/标点、转小写）兜住完全同名的重复。注：不同源用不同措辞
+  // 写同一事件（标题不一样）无法靠此命中，那需要语义去重，暂不做。
+  const seenUrl = new Set<string>();
+  const seenTitle = new Set<string>();
+  const normTitle = (s: string) =>
+    s.trim().toLowerCase().replace(/[\s，。、；：！？""''（）()【】《》〈〉\-—~·.,!?;:'"]/g, '');
   const unique = items.filter((it) => {
-    if (seen.has(it.url)) return false;
-    seen.add(it.url);
+    const t = normTitle(it.title);
+    if (seenUrl.has(it.url) || (t && seenTitle.has(t))) return false;
+    seenUrl.add(it.url);
+    if (t) seenTitle.add(t);
     return true;
   });
   const existing = await findExistingSourceUrls(unique.map((i) => i.url));
