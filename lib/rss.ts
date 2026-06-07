@@ -2,14 +2,15 @@ import 'server-only';
 import Parser from 'rss-parser';
 
 // 抓取层：唯一换源点就是下面的 FEEDS。换源 / 加源 = 改一行 URL，别处不动。
-// 前两个走自建 RSSHub（部署在 Vercel，仅自己用，不跟公共镜像争抢，稳）；换实例只改 MIRROR。
-// 人民网是原生源，最稳，当兜底锚。
+// 三源都走自建 RSSHub（部署在 Vercel，仅自己用，不跟公共镜像争抢，稳）；换实例只改 MIRROR。
 const MIRROR = 'https://rsshub-virid-xi.vercel.app';
 
 const FEEDS: { url: string; source: string }[] = [
   { url: `${MIRROR}/wallstreetcn/news/global`, source: '华尔街见闻' },
-  { url: `${MIRROR}/yicai/headline`, source: '第一财经' },
-  { url: 'http://www.people.com.cn/rss/finance.xml', source: '人民网财经' },
+  // headline 路由已停更（2026-06-07 实测停在 05-30），换成同源在更新的 latest。
+  { url: `${MIRROR}/yicai/latest`, source: '第一财经' },
+  // 原人民网 RSS 已停更（2026-06-07 实测最新一条停在 2025-06-05），换成更新新鲜的财新最新。
+  { url: `${MIRROR}/caixin/latest`, source: '财新' },
 ];
 
 export type RssItem = {
@@ -31,8 +32,7 @@ type ParsedItem = {
 };
 
 const parser = new Parser({
-  // 单源超时上限。自建 RSSHub 首次冷启动约 11s（热约 5s），给 12s 等它醒来；
-  // 人民网原生源远快于此，不受影响。
+  // 单源超时上限。自建 RSSHub 首次冷启动约 11s（热约 5s），给 12s 等它醒来。
   timeout: 12000,
   headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) FinewsBot/0.1' },
   customFields: { item: [['content:encoded', 'contentEncoded']] },
